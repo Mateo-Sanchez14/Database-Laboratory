@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`MOVIMIENTOS` (
   PRIMARY KEY (`idMOVIMIENTOS`, `tipoMovimiento`, `idRUBROS`),
   UNIQUE INDEX `idMOVIMIENTOS_UNIQUE` (`idMOVIMIENTOS` ASC) VISIBLE,
   INDEX `fk_MOVIMIENTOS_RUBROS_idx` (`idRUBROS` ASC) VISIBLE,
-  CONSTRAINT Check_Montos CHECK (`tipoMovimiento`= "E" AND `monto` <=0 OR `tipoMovimiento`= "I" AND `monto` >=0 ),
+  CONSTRAINT Check_Montos CHECK (`tipoMovimiento`= 'E' AND `monto` <=0 OR `tipoMovimiento`= 'I' AND `monto` >=0 ),
   CONSTRAINT `fk_MOVIMIENTOS_RUBROS`
     FOREIGN KEY (`idRUBROS`)
     REFERENCES `LBD2024G06AGROSA`.`RUBROS` (`idRUBROS`)
