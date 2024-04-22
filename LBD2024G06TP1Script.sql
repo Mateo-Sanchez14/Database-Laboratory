@@ -2,19 +2,21 @@
 -- Grupo Nro:
 -- Integrantes: Grellet Martinoia, Alejandro // Sanchez Mateo 
 -- Tema: AGROSA
--- Nombre del Esquema (LBD02024G()AGROSA)
+-- Nombre del Esquema (LBD02024G06AGROSA)
 -- Plataforma Windows 10 // Docker Buildx (Docker Inc., v0.9.1) :
 -- Motor y Versión: MySQL SServer 8.0.36
 -- GitHub Repositorio: LBD2024G04
 -- GitHub Usuario: AlejandroGrellet // Mateo-Sanchez14
+DROP SCHEMA `LBD2024G06AGROSA`;
+
 CREATE SCHEMA IF NOT EXISTS `LBD2024G06AGROSA` DEFAULT CHARACTER SET utf8;
 
-CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`USURAIOS` (
+CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`USUARIOS` (
   `idUSUARIOS` INT(11) NOT NULL AUTO_INCREMENT,
   `usuario` VARCHAR(30) NOT NULL,
   `password` VARCHAR(30) NOT NULL,
   `tipoUsuario` ENUM('Administrador', 'Secretario') DEFAULT 'Secretario' NOT NULL,
-  `estado` BINARY(1) NOT NULL,
+  `estado` CHAR(1) NOT NULL DEFAULT 'A',
   PRIMARY KEY (`idUSUARIOS`),
   UNIQUE INDEX `idUsuario_UNIQUE` (`idUSUARIOS` ASC) VISIBLE)
 ENGINE = InnoDB
@@ -31,13 +33,13 @@ ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`MOVIMIENTOS` (
+  `idRUBROS` INT(11) NOT NULL,
   `idMOVIMIENTOS` INT(11) NOT NULL,
   `tipoMovimiento` CHAR(1) NOT NULL,
   `fecha` DATE NOT NULL,
   `monto` DECIMAL NOT NULL,
   `detalle` VARCHAR(80) NULL DEFAULT NULL,
   `estado` CHAR(1) NOT NULL,
-  `idRUBROS` INT(11) NOT NULL,
   PRIMARY KEY (`idMOVIMIENTOS`, `tipoMovimiento`, `idRUBROS`),
   UNIQUE INDEX `idMOVIMIENTOS_UNIQUE` (`idMOVIMIENTOS` ASC) VISIBLE,
   INDEX `fk_MOVIMIENTOS_RUBROS_idx` (`idRUBROS` ASC) VISIBLE,
@@ -45,28 +47,42 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`MOVIMIENTOS` (
   CONSTRAINT `fk_MOVIMIENTOS_RUBROS`
     FOREIGN KEY (`idRUBROS`)
     REFERENCES `LBD2024G06AGROSA`.`RUBROS` (`idRUBROS`)
-    ON DELETE NO ACTION
+    ON DELETE CASCADE
     ON UPDATE NO ACTION)
-
+  
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`EMPLEADOS` (
   `idEMPLEADO` INT(11) NOT NULL,
-  `cuil` INT(11) UNSIGNED NOT NULL,
+  `cuil` BIGINT(11) UNSIGNED NOT NULL,
   `nombres` VARCHAR(30) NOT NULL,
   `apellidos` VARCHAR(30) NOT NULL,
-  `estado` CHAR(1) NOT NULL,
+  `estado` CHAR(1) NOT NULL DEFAULT 'A',
+  CONSTRAINT EMPLEADOS_CUIL_LEN CHECK (CHAR_LENGTH(CAST(`cuil` AS CHAR)) = 11),
   PRIMARY KEY (`idEMPLEADO`),
   UNIQUE INDEX `idEMPLEADOS_UNIQUE` (`idEMPLEADO` ASC) VISIBLE)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
+-- Added table PROPIETARIOS
+
+CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`PROPIETARIOS` (
+  `cuil` BIGINT(11) NOT NULL,
+  `nombres` VARCHAR(30) NOT NULL,
+  `apellidos` VARCHAR(30) NOT NULL,
+  `estado` CHAR(1) NOT NULL DEFAULT 'A',
+  CONSTRAINT PROPIETARIOS_CUIL_LEN CHECK (CHAR_LENGTH(CAST(`cuil` AS CHAR)) = 11),
+  PRIMARY KEY (`cuil`))
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+-- Updated table FINCAS
+
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`FINCAS` (
   `idFINCA` INT(11) NOT NULL,
-  `finca` VARCHAR(45) NOT NULL,
-  `responsable` VARCHAR(45) NOT NULL,
-  `cuilResoinsable` INT(11) NOT NULL,
+  `cuilPROPIETARIO` BIGINT(11) UNSIGNED NOT NULL,
+  `nombreFinca` VARCHAR(45) NOT NULL,
   `latitud` FLOAT(11) NULL DEFAULT NULL,
   `longitud` FLOAT(11) NULL DEFAULT NULL,
   PRIMARY KEY (`idFINCA`),
@@ -76,26 +92,28 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`FINCAS` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
+-- Updated table PARTES 
+
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`PARTES` (
   `idPARTE` INT(11) NOT NULL,
+  `idENCARGADO` INT(11) NOT NULL,
+  `idFINCA` INT(11) NOT NULL,
   `fechaParte` DATE NOT NULL,
   `estado` CHAR(1) NOT NULL,
   `superficie` FLOAT(11) NOT NULL,
-  `idENCARGADO` INT(11) NOT NULL,
-  `idFINCA` INT(11) NOT NULL,
   PRIMARY KEY (`idPARTE`),
   UNIQUE INDEX `idPARTES_UNIQUE` (`idPARTE` ASC) VISIBLE,
-  INDEX `fk_PARTES_EMPLEADOS1_idx` (`idENCARGADO` ASC) VISIBLE,
-  INDEX `fk_PARTES_FINCAS1_idx` (`idFINCA` ASC) VISIBLE,
+  INDEX `idENCARGADO` (`idENCARGADO` ASC) VISIBLE,
+  INDEX `idFINCA` (`idFINCA` ASC) VISIBLE,
   CONSTRAINT `fk_PARTES_EMPLEADOS1`
     FOREIGN KEY (`idENCARGADO`)
     REFERENCES `LBD2024G06AGROSA`.`EMPLEADOS` (`idEMPLEADO`)
-    ON DELETE NO ACTION
+    ON DELETE CASCADE
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_PARTES_FINCAS1`
     FOREIGN KEY (`idFINCA`)
     REFERENCES `LBD2024G06AGROSA`.`FINCAS` (`idFINCA`)
-    ON DELETE NO ACTION
+    ON DELETE CASCADE
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
@@ -115,7 +133,36 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`LINEAS_PARTES` (
   CONSTRAINT `fk_PARTES_has_EMPLEADOS_EMPLEADOS1`
     FOREIGN KEY (`idEMPLEADO`)
     REFERENCES `LBD2024G06AGROSA`.`EMPLEADOS` (`idEMPLEADO`)
+    ON DELETE CASCADE
+    ON UPDATE NO ACTION)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+-- Update with new Tables 
+
+CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`VEHICULOS` (
+  `idVEHICULO` INT(11) NOT NULL,
+  `tipo` VARCHAR(45) NOT NULL,
+  `modelo` VARCHAR(45) NOT NULL,
+  `funcion` VARCHAR(45) NULL DEFAULT NULL,
+  PRIMARY KEY (`idVEHICULO`),
+  UNIQUE INDEX `idVEHICULO_UNIQUE` (`idVEHICULO` ASC) VISIBLE)
+ENGINE = InnoDB
+DEFAULT CHARACTER SET = utf8;
+
+CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`VEHICULOS_POR_PARTES` (
+  `idVEHICULO` INT(11) NOT NULL,
+  `idPARTE` INT(11) NOT NULL,
+  PRIMARY KEY (`idVEHICULO`, `idPARTE`),
+  CONSTRAINT `fk_VEHICULOS_POR_PARTES1`
+    FOREIGN KEY (`idVEHICULO`)
+    REFERENCES `LBD2024G06AGROSA`.`VEHICULOS` (`idVEHICULO`)
     ON DELETE NO ACTION
+    ON UPDATE NO ACTION,
+  CONSTRAINT `fk_VEHICULOS_POR_PARTES2`
+    FOREIGN KEY (`idPARTE`)
+    REFERENCES `LBD2024G06AGROSA`.`PARTES` (`idPARTE`)
+    ON DELETE CASCADE
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
@@ -127,7 +174,7 @@ DEFAULT CHARACTER SET = utf8;
 START TRANSACTION ;
 -- Populate the table USUARIOS
 -- Insert sample data into the USUARIOS table
-INSERT INTO `LBD2024G()AGROSA`.`USUARIOS` (`usuario`, `password`, `tipoUsuario`, `estado`)
+INSERT INTO `LBD2024G06AGROSA`.`USUARIOS` (`usuario`, `password`, `tipoUsuario`, `estado`)
 VALUES ('JohnDoe', 'password1', 'Administrador', 1),
        ('JaneDoe', 'password2', 'Secretario', 1),
        ('AliceSmith', 'password3', 'Secretario', 0),
@@ -136,7 +183,7 @@ VALUES ('JohnDoe', 'password1', 'Administrador', 1),
 
 -- Populate the table RUBROS
 
-INSERT INTO `LBD2024G()AGROSA`.`RUBROS` (`rubro`, `tipoRubro`, `estado`)
+INSERT INTO `LBD2024G06AGROSA`.`RUBROS` (`rubro`, `tipoRubro`, `estado`)
 VALUES ('Venta', 'Ingreso', 'A'),
        ('Empleados', 'Egreso', 'A'),
        ('Insumos', 'Egreso', 'A'),
@@ -146,7 +193,7 @@ VALUES ('Venta', 'Ingreso', 'A'),
        ('Arriendo', 'Egreso', 'A');
 
 -- Populate the table MOVIMIENTOS
-INSERT INTO `LBD2024G()AGROSA`.`MOVIMIENTOS` (`idMOVIMIENTOS`, `tipoMovimiento`, `fecha`, `monto`, `detalle`, `estado`,
+INSERT INTO `LBD2024G06AGROSA`.`MOVIMIENTOS` (`idMOVIMIENTOS`, `tipoMovimiento`, `fecha`, `monto`, `detalle`, `estado`,
                                               `idRUBROS`)
 VALUES (1, 'I', '2024-01-01', 1000, 'Venta de Trigo', 'A', 1),
        (2, 'E', '2024-01-01', -500, 'Pago de Sueldos', 'A', 2),
@@ -170,76 +217,100 @@ VALUES (1, 'I', '2024-01-01', 1000, 'Venta de Trigo', 'A', 1),
        (20, 'E', '2024-01-01', -1900, 'Pago de Sueldos', 'A', 2);
 
 -- Populate the table EMPLEADOS
-INSERT INTO `LBD2024G()AGROSA`.`EMPLEADOS` (`idEMPLEADO`, `cuil`, `nombres`, `apellidos`, `estado`)
-VALUES (1, 123456789, 'Juan', 'Perez', 'A'),
-       (2, 987654321, 'Maria', 'Gomez', 'A'),
-       (3, 456789123, 'Pedro', 'Rodriguez', 'A'),
-       (4, 321654987, 'Ana', 'Martinez', 'A'),
-       (5, 654987321, 'Carlos', 'Lopez', 'A'),
-       (6, 789123456, 'Laura', 'Garcia', 'A'),
-       (7, 654321987, 'Diego', 'Fernandez', 'A'),
-       (8, 321987654, 'Silvia', 'Alvarez', 'A'),
-       (9, 987321654, 'Jorge', 'Diaz', 'A'),
-       (10, 456123789, 'Marta', 'Benitez', 'A'),
-       (11, 789654321, 'Ricardo', 'Sosa', 'A'),
-       (12, 654789321, 'Florencia', 'Torres', 'A'),
-       (13, 321789654, 'Roberto', 'Paz', 'A'),
-       (14, 987123654, 'Cecilia', 'Vera', 'A'),
-       (15, 456321789, 'Esteban', 'Rios', 'A'),
-       (16, 789654123, 'Carolina', 'Mendez', 'A'),
-       (17, 654123789, 'Federico', 'Luna', 'A'),
-       (18, 321654789, 'Gabriela', 'Aguirre', 'A'),
-       (19, 987654123, 'Ezequiel', 'Gimenez', 'A'),
-       (20, 456987321, 'Valeria', 'Peralta', 'A');
+INSERT INTO `LBD2024G06AGROSA`.`EMPLEADOS` (`idEMPLEADO`, `cuil`, `nombres`, `apellidos`, `estado`)
+VALUES (1, 12345678912, 'Juan', 'Perez', 'A'),
+       (2, 98765432113, 'Maria', 'Gomez', 'A'),
+       (3, 45678912314, 'Pedro', 'Rodriguez', 'A'),
+       (4, 32165498715, 'Ana', 'Martinez', 'A'),
+       (5, 65498732116, 'Carlos', 'Lopez', 'A'),
+       (6, 78912345617, 'Laura', 'Garcia', 'A'),
+       (7, 65432198718, 'Diego', 'Fernandez', 'A'),
+       (8, 32198765419, 'Silvia', 'Alvarez', 'A'),
+       (9, 98732165410, 'Jorge', 'Diaz', 'A'),
+       (10, 45612378921, 'Marta', 'Benitez', 'A'),
+       (11, 78965432122, 'Ricardo', 'Sosa', 'A'),
+       (12, 65478932120, 'Florencia', 'Torres', 'A'),
+       (13, 32178965423, 'Roberto', 'Paz', 'A'),
+       (14, 98712365424, 'Cecilia', 'Vera', 'A'),
+       (15, 45632178925, 'Esteban', 'Rios', 'A'),
+       (16, 78965412326, 'Carolina', 'Mendez', 'A'),
+       (17, 65412378927, 'Federico', 'Luna', 'A'),
+       (18, 32165478928, 'Gabriela', 'Aguirre', 'A'),
+       (19, 98765412329, 'Ezequiel', 'Gimenez', 'A'),
+       (20, 45698732130, 'Valeria', 'Peralta', 'A');
+
+-- Populate the table PROPIETARIOS
+INSERT INTO `LBD2024G06AGROSA`.`PROPIETARIOS` (`cuil`, `nombres`, `apellidos`)
+VALUES (27123456789, 'Liliana', 'Gomez'),
+       (27234567891, 'Norma', 'Garcia'),
+       (20123456789, 'Ricardo José', 'Suarez'),
+       (27345678912, 'Marta', 'Ruiz'),
+       (27456789123, 'Lucía', 'Benitez'),
+       (20234567892, 'Pedro', 'Suarez'),
+       (27567891234, 'Mónica', 'Ramirez'),
+       (20345678912, 'Carlos', 'Sanchez'),
+       (20456789123, 'Oscar', 'Gomez'),
+       (20567891234, 'José', 'Martinez'),
+       (20678912345, 'Víctor Manuel', 'Ramirez'),
+       (20789123456, 'Miguel', 'Ruiz Torres'),
+       (20891234567, 'Carlos', 'Medina Paz'),
+       (27678912345, 'Silvia', 'Torres'),
+       (20357159123, 'Ramón', 'Lopez Rios Vega'),
+       (27789123456, 'Natalia', 'Mendez'),
+       (20159357456, 'Víctor', 'Luna'),
+       (20753951789, 'Roberto', 'Sanchez Aguirre'),
+       (20951753123, 'Ezequiel', 'Peralta'),
+       (27891234567, 'Valeria', 'Gimenez');
 
 -- Populate the table FINCAS
-INSERT INTO `LBD2024G()AGROSA`.`FINCAS` (`idFINCA`, `finca`, `responsable`, `cuilResoinsable`, `latitud`, `longitud`)
-VALUES (1, 'La Estancia', 'Juan Perez', 123456789, -34.23722, -51.281592),
-       (2, 'El Descanso', 'Maria Gomez', 987654321, -34.6321722, -18.381592),
-       (3, 'La Esperanza', 'Pedro Rodriguez', 456789123, -33.603722, -28.381592),
-       (4, 'La Fortuna', 'Ana Martinez', 321654987, -34.60312, -38.381592),
-       (5, 'La Victoria', 'Carlos Lopez', 654987321, -34.63722, -58.381392),
-       (6, 'La Paz', 'Laura Garcia', 789123456, -34.223722, -52.381392),
-       (7, 'La Libertad', 'Diego Fernandez', 654321987, -34.6413722, -12.381392),
-       (8, 'La Felicidad', 'Silvia Alvarez', 321987654, -34.601722, -15.181392),
-       (9, 'La Unión', 'Jorge Diaz', 987321654, -34.923722, -15.381392),
-       (10, 'La Perseverancia', 'Marta Benitez', 456123789, -34.231722, -15.681392),
-       (11, 'La Justicia', 'Ricardo Sosa', 789654321, -34.333722, -15.671392),
-       (12, 'La Gloria', 'Florencia Torres', 654789321, -34.60643722, -15.676392),
-       (13, 'La Dicha', 'Roberto Paz', 321789654, -34.606422, -15.676792),
-       (14, 'La Prosperidad', 'Cecilia Vera', 987123654, -34.1233722, -15.676772),
-       (15, 'La Alegría', 'Esteban Rios', 456321789, -34.6643722, -15.6123772),
-       (16, 'La Fe', 'Carolina Mendez', 789654123, -34.6023422, -15.613772),
-       (17, 'La Tranquilidad', 'Federico Luna', 654123789, -34.623421, -16.613772),
-       (18, 'La Armonía', 'Gabriela Aguirre', 321654789, -34.62131, -17.613772),
-       (19, 'La Solidaridad', 'Ezequiel Gimenez', 987654123, -24.603722, -18.613772),
-       (20, 'La Caridad', 'Valeria Peralta', 456987321, -33.123722, -19.613772);
+INSERT INTO `LBD2024G06AGROSA`.`FINCAS` (`idFINCA`, `nombreFinca`, `latitud`, `longitud`, `cuilPROPIETARIO`)
+VALUES (1, 'La Estancia', -34.23722, -51.281592, 27891234567),
+       (2, 'El Descanso', -34.6321722, -18.381592, 20951753123),
+       (3, 'La Esperanza', -33.603722, -28.381592, 20753951789),
+       (4, 'La Fortuna', -34.60312, -38.381592, 20159357456),
+       (5, 'La Victoria', -34.63722, -58.381392, 27789123456),
+       (6, 'La Paz', -34.223722, -52.381392, 20357159123),
+       (7, 'La Libertad', -34.6413722, -12.381392, 27678912345),
+       (8, 'La Felicidad', -34.601722, -15.181392, 20891234567),
+       (9, 'La Unión', -34.923722, -15.381392, 20789123456),
+       (10, 'La Perseverancia', -34.231722, -15.681392, 20678912345),
+       (11, 'La Justicia', -34.333722, -15.671392, 20567891234),
+       (12, 'La Gloria', -34.60643722, -15.676392, 20456789123),
+       (13, 'La Dicha', -34.606422, -15.676792, 20345678912),
+       (14, 'La Prosperidad', -34.1233722, -15.676772, 27567891234),
+       (15, 'La Alegría', -34.6643722, -15.6123772, 20234567892),
+       (16, 'La Fe', -34.6023422, -15.613772, 27456789123),
+       (17, 'La Tranquilidad', -34.623421, -16.613772, 27345678912),
+       (18, 'La Armonía', -34.62131, -17.613772, 20123456789),
+       (19, 'La Solidaridad', -24.603722, -18.613772, 27234567891),
+       (20, 'La Caridad', -33.123722, -19.613772, 27123456789);
 
 -- Populate the table PARTES
-INSERT INTO `LBD2024G()AGROSA`.`PARTES` (`idPARTE`, `fechaParte`, `estado`, `superficie`, `idENCARGADO`, `idFINCA`)
-VALUES (1, '2024-05-13', 'A', 100, 1, 1),
-       (2, '2024-01-25', 'A', 200, 2, 2),
-       (3, '2024-04-11', 'A', 300, 3, 3),
-       (4, '2023-11-17', 'P', 400, 4, 4),
-       (5, '2024-04-22', 'A', 500, 5, 5),
-       (6, '2024-10-16', 'A', 600, 6, 6),
-       (7, '2024-10-14', 'A', 700, 7, 7),
-       (8, '2022-11-22', 'A', 800, 8, 8),
-       (9, '2024-04-21', 'A', 900, 9, 9),
-       (10, '2024-08-14', 'A', 1000, 10, 10),
-       (11, '2024-02-29', 'A', 1100, 11, 11),
-       (12, '2024-11-01', 'A', 1200, 12, 12),
-       (13, '2024-01-08', 'A', 1300, 13, 13),
-       (14, '2024-06-18', 'A', 1400, 14, 14),
-       (15, '2024-03-07', 'A', 1500, 15, 15),
-       (16, '2024-03-08', 'A', 1600, 16, 16),
-       (17, '2024-03-15', 'A', 1700, 17, 17),
-       (18, '2024-03-23', 'A', 1800, 18, 18),
-       (19, '2024-03-26', 'A', 1900, 19, 19),
-       (20, '2024-03-27', 'A', 2000, 20, 20);
+INSERT INTO `LBD2024G06AGROSA`.`PARTES` (`idPARTE`, `fechaParte`, `estado`, `superficie`, `idENCARGADO`, `idFINCA`)
+VALUES 
+    (1, '2024-05-13', 'A', 100, 1, 1),
+    (2, '2024-06-25', 'P', 200, 2, 2),
+    (3, '2024-07-11', 'A', 300, 3, 3),
+    (4, '2024-08-17', 'P', 400, 4, 4),
+    (5, '2024-09-22', 'A', 500, 5, 5),
+    (6, '2024-10-16', 'P', 600, 6, 6),
+    (7, '2024-11-14', 'A', 700, 7, 7),
+    (8, '2024-12-22', 'P', 800, 8, 8),
+    (9, '2025-01-21', 'A', 900, 9, 9),
+    (10, '2025-02-14', 'P', 1000, 10, 10),
+    (11, '2025-03-29', 'A', 1100, 11, 11),
+    (12, '2025-04-01', 'P', 1200, 12, 12),
+    (13, '2025-05-08', 'A', 1300, 13, 13),
+    (14, '2025-06-18', 'P', 1400, 14, 14),
+    (15, '2025-07-07', 'A', 1500, 15, 15),
+    (16, '2025-08-08', 'P', 1600, 16, 16),
+    (17, '2025-09-15', 'A', 1700, 17, 17),
+    (18, '2025-10-23', 'P', 1800, 18, 18),
+    (19, '2025-11-26', 'A', 1900, 19, 19),
+    (20, '2025-12-27', 'P', 2000, 20, 20);
 
 -- Populate the table LINEAS_PARTES
-INSERT INTO `LBD2024G()AGROSA`.`LINEAS_PARTES` (`idPARTE`, `idEMPLEADO`, `rol`)
+INSERT INTO `LBD2024G06AGROSA`.`LINEAS_PARTES` (`idPARTE`, `idEMPLEADO`, `rol`)
 VALUES (1, 1, 'E'),
        (1, 2, 'O'),
        (1, 3, 'O'),
@@ -340,6 +411,60 @@ VALUES (1, 1, 'E'),
        (20, 18, 'O'),
        (20, 19, 'O'),
        (20, 20, 'O');
-
-
+       
+-- Populate the table VEHICULOS
+INSERT INTO `LBD2024G06AGROSA`.`VEHICULOS` (`idVEHICULO`,`tipo`, `modelo`, `funcion`)
+VALUES 	('1', 'Tractor', 'John Deere 5075E', 'Labranza'),
+		('2', 'Camión', 'Isuzu NPR', 'Transporte de carga'),
+		('3', 'Pickup', 'Ford F-150', 'Transporte ligero'),
+		('4', 'Cosechadora', 'Case IH Axial-Flow 7150', 'Cosecha de granos'),
+		('5', 'Remolque', 'Brent 678', 'Transporte de productos agrícolas');
+        
+-- Populate the table VEHICULOS_POR_PARTES
+INSERT INTO `LBD2024G06AGROSA`.`VEHICULOS_POR_PARTES` (`idVEHICULO`, `idPARTE`)
+VALUES 
+    (1, 1),
+    (3, 1), 
+    (2, 2), 
+    (3, 2), 
+    (3, 3), 
+    (5, 3),
+    (1, 4),
+    (4, 4),
+    (1, 5),
+    (2, 5), 
+    (5, 5), 
+	(1, 6),
+    (3, 6), 
+    (2, 7), 
+    (3, 7), 
+    (3, 8), 
+    (5, 8),
+    (1, 9),
+    (4, 9),
+    (1, 10),
+    (2, 10), 
+    (5, 10), 
+    (1, 11),
+    (3, 11), 
+    (2, 12), 
+    (3, 12),
+    (3, 13), 
+    (5, 13),
+    (1, 14),
+    (4, 14),
+    (1, 15),
+    (2, 15), 
+    (5, 15), 
+	(1, 17),
+    (3, 17), 
+    (2, 18), 
+    (3, 18),
+    (3, 19), 
+    (5, 19),
+    (1, 20),
+    (4, 20),
+    (2, 20), 
+    (5, 20);
+    
 COMMIT ;
