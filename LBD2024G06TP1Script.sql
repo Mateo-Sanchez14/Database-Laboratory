@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`MOVIMIENTOS` (
   CONSTRAINT `fk_MOVIMIENTOS_RUBROS`
     FOREIGN KEY (`idRUBROS`)
     REFERENCES `LBD2024G06AGROSA`.`RUBROS` (`idRUBROS`)
-    ON DELETE ON CASCADE
+    ON DELETE CASCADE
     ON UPDATE NO ACTION)
   
 ENGINE = InnoDB
@@ -55,22 +55,24 @@ DEFAULT CHARACTER SET = utf8;
 
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`EMPLEADOS` (
   `idEMPLEADO` INT(11) NOT NULL,
-  `cuil` INT(11) UNSIGNED NOT NULL,
+  `cuil` BIGINT(11) UNSIGNED NOT NULL,
   `nombres` VARCHAR(30) NOT NULL,
   `apellidos` VARCHAR(30) NOT NULL,
   `estado` CHAR(1) NOT NULL DEFAULT 'A',
+  CONSTRAINT EMPLEADOS_CUIL_LEN CHECK (CHAR_LENGTH(CAST(`cuil` AS CHAR)) = 11),
   PRIMARY KEY (`idEMPLEADO`),
   UNIQUE INDEX `idEMPLEADOS_UNIQUE` (`idEMPLEADO` ASC) VISIBLE)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
--- Added table DUEÑOS
+-- Added table PROPIETARIOS
 
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`PROPIETARIOS` (
-  `cuil` INT(11) NOT NULL,
+  `cuil` BIGINT(11) NOT NULL,
   `nombres` VARCHAR(30) NOT NULL,
   `apellidos` VARCHAR(30) NOT NULL,
   `estado` CHAR(1) NOT NULL DEFAULT 'A',
+  CONSTRAINT PROPIETARIOS_CUIL_LEN CHECK (CHAR_LENGTH(CAST(`cuil` AS CHAR)) = 11),
   PRIMARY KEY (`cuil`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
@@ -79,16 +81,14 @@ DEFAULT CHARACTER SET = utf8;
 
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`FINCAS` (
   `idFINCA` INT(11) NOT NULL,
-  `cuilDUEÑO` INT(11) NOT NULL,
+  `cuilPROPIETARIO` BIGINT(11) UNSIGNED NOT NULL,
   `nombreFinca` VARCHAR(45) NOT NULL,
   `latitud` FLOAT(11) NULL DEFAULT NULL,
   `longitud` FLOAT(11) NULL DEFAULT NULL,
   PRIMARY KEY (`idFINCA`),
   UNIQUE INDEX `idFINCAS_UNIQUE` (`idFINCA` ASC) VISIBLE,
   UNIQUE INDEX `longitud_UNIQUE` (`longitud` ASC) VISIBLE,
-  UNIQUE INDEX `latitud_UNIQUE` (`latitud` ASC) VISIBLE,
-    ON DELETE ON CASCADE
-    ON UPDATE NO ACTION)
+  UNIQUE INDEX `latitud_UNIQUE` (`latitud` ASC) VISIBLE)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
@@ -98,24 +98,22 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`PARTES` (
   `idPARTE` INT(11) NOT NULL,
   `idENCARGADO` INT(11) NOT NULL,
   `idFINCA` INT(11) NOT NULL,
-  `cuilDUEÑO` INT(11) NOT NULL,
   `fechaParte` DATE NOT NULL,
   `estado` CHAR(1) NOT NULL,
   `superficie` FLOAT(11) NOT NULL,
   PRIMARY KEY (`idPARTE`),
   UNIQUE INDEX `idPARTES_UNIQUE` (`idPARTE` ASC) VISIBLE,
   INDEX `idENCARGADO` (`idENCARGADO` ASC) VISIBLE,
-  INDEX `idFINCA` (`idFINCA` ASC, `cuilDUEÑO` ASC) VISIBLE,
-  INDEX `cuilDUEÑO` (`cuilDUEÑO` ASC) VISIBLE,
+  INDEX `idFINCA` (`idFINCA` ASC) VISIBLE,
   CONSTRAINT `fk_PARTES_EMPLEADOS1`
     FOREIGN KEY (`idENCARGADO`)
     REFERENCES `LBD2024G06AGROSA`.`EMPLEADOS` (`idEMPLEADO`)
-    ON DELETE ON CASCADE
+    ON DELETE CASCADE
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_PARTES_FINCAS1`
-    FOREIGN KEY (`idFINCA` , `cuilDUEÑO`)
-    REFERENCES `LBD2024G06AGROSA`.`FINCAS` (`idFINCA` , `cuilDUEÑO`)
-    ON DELETE ON CASCADE
+    FOREIGN KEY (`idFINCA`)
+    REFERENCES `LBD2024G06AGROSA`.`FINCAS` (`idFINCA`)
+    ON DELETE CASCADE
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
@@ -135,7 +133,7 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`LINEAS_PARTES` (
   CONSTRAINT `fk_PARTES_has_EMPLEADOS_EMPLEADOS1`
     FOREIGN KEY (`idEMPLEADO`)
     REFERENCES `LBD2024G06AGROSA`.`EMPLEADOS` (`idEMPLEADO`)
-    ON DELETE ON CASCADE
+    ON DELETE CASCADE
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
@@ -156,15 +154,15 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`VEHICULOS_POR_PARTES` (
   `idVEHICULO` INT(11) NOT NULL,
   `idPARTE` INT(11) NOT NULL,
   PRIMARY KEY (`idVEHICULO`, `idPARTE`),
-  CONSTRAINT `fk_VEHICULOS_POR_PARTES`
+  CONSTRAINT `fk_VEHICULOS_POR_PARTES1`
     FOREIGN KEY (`idVEHICULO`)
     REFERENCES `LBD2024G06AGROSA`.`VEHICULOS` (`idVEHICULO`)
     ON DELETE NO ACTION
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_VEHICULOS_POR_PARTES`
+  CONSTRAINT `fk_VEHICULOS_POR_PARTES2`
     FOREIGN KEY (`idPARTE`)
     REFERENCES `LBD2024G06AGROSA`.`PARTES` (`idPARTE`)
-    ON DELETE ON CASCADE
+    ON DELETE CASCADE
     ON UPDATE NO ACTION)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
@@ -220,26 +218,26 @@ VALUES (1, 'I', '2024-01-01', 1000, 'Venta de Trigo', 'A', 1),
 
 -- Populate the table EMPLEADOS
 INSERT INTO `LBD2024G06AGROSA`.`EMPLEADOS` (`idEMPLEADO`, `cuil`, `nombres`, `apellidos`, `estado`)
-VALUES (1, 123456789, 'Juan', 'Perez', 'A'),
-       (2, 987654321, 'Maria', 'Gomez', 'A'),
-       (3, 456789123, 'Pedro', 'Rodriguez', 'A'),
-       (4, 321654987, 'Ana', 'Martinez', 'A'),
-       (5, 654987321, 'Carlos', 'Lopez', 'A'),
-       (6, 789123456, 'Laura', 'Garcia', 'A'),
-       (7, 654321987, 'Diego', 'Fernandez', 'A'),
-       (8, 321987654, 'Silvia', 'Alvarez', 'A'),
-       (9, 987321654, 'Jorge', 'Diaz', 'A'),
-       (10, 456123789, 'Marta', 'Benitez', 'A'),
-       (11, 789654321, 'Ricardo', 'Sosa', 'A'),
-       (12, 654789321, 'Florencia', 'Torres', 'A'),
-       (13, 321789654, 'Roberto', 'Paz', 'A'),
-       (14, 987123654, 'Cecilia', 'Vera', 'A'),
-       (15, 456321789, 'Esteban', 'Rios', 'A'),
-       (16, 789654123, 'Carolina', 'Mendez', 'A'),
-       (17, 654123789, 'Federico', 'Luna', 'A'),
-       (18, 321654789, 'Gabriela', 'Aguirre', 'A'),
-       (19, 987654123, 'Ezequiel', 'Gimenez', 'A'),
-       (20, 456987321, 'Valeria', 'Peralta', 'A');
+VALUES (1, 12345678912, 'Juan', 'Perez', 'A'),
+       (2, 98765432113, 'Maria', 'Gomez', 'A'),
+       (3, 45678912314, 'Pedro', 'Rodriguez', 'A'),
+       (4, 32165498715, 'Ana', 'Martinez', 'A'),
+       (5, 65498732116, 'Carlos', 'Lopez', 'A'),
+       (6, 78912345617, 'Laura', 'Garcia', 'A'),
+       (7, 65432198718, 'Diego', 'Fernandez', 'A'),
+       (8, 32198765419, 'Silvia', 'Alvarez', 'A'),
+       (9, 98732165410, 'Jorge', 'Diaz', 'A'),
+       (10, 45612378921, 'Marta', 'Benitez', 'A'),
+       (11, 78965432122, 'Ricardo', 'Sosa', 'A'),
+       (12, 65478932120, 'Florencia', 'Torres', 'A'),
+       (13, 32178965423, 'Roberto', 'Paz', 'A'),
+       (14, 98712365424, 'Cecilia', 'Vera', 'A'),
+       (15, 45632178925, 'Esteban', 'Rios', 'A'),
+       (16, 78965412326, 'Carolina', 'Mendez', 'A'),
+       (17, 65412378927, 'Federico', 'Luna', 'A'),
+       (18, 32165478928, 'Gabriela', 'Aguirre', 'A'),
+       (19, 98765412329, 'Ezequiel', 'Gimenez', 'A'),
+       (20, 45698732130, 'Valeria', 'Peralta', 'A');
 
 -- Populate the table PROPIETARIOS
 INSERT INTO `LBD2024G06AGROSA`.`PROPIETARIOS` (`cuil`, `nombres`, `apellidos`)
@@ -265,7 +263,7 @@ VALUES (27123456789, 'Liliana', 'Gomez'),
        (27891234567, 'Valeria', 'Gimenez');
 
 -- Populate the table FINCAS
-INSERT INTO `LBD2024G06AGROSA`.`FINCAS` (`idFINCA`, `nombreFinca`, `latitud`, `longitud`, `cuilDUEÑO`)
+INSERT INTO `LBD2024G06AGROSA`.`FINCAS` (`idFINCA`, `nombreFinca`, `latitud`, `longitud`, `cuilPROPIETARIO`)
 VALUES (1, 'La Estancia', -34.23722, -51.281592, 27891234567),
        (2, 'El Descanso', -34.6321722, -18.381592, 20951753123),
        (3, 'La Esperanza', -33.603722, -28.381592, 20753951789),
@@ -288,28 +286,28 @@ VALUES (1, 'La Estancia', -34.23722, -51.281592, 27891234567),
        (20, 'La Caridad', -33.123722, -19.613772, 27123456789);
 
 -- Populate the table PARTES
-INSERT INTO `LBD2024G06AGROSA`.`PARTES` (`idPARTE`, `fechaParte`, `estado`, `superficie`, `idENCARGADO`, `idFINCA`, `cuilDUEÑO`)
+INSERT INTO `LBD2024G06AGROSA`.`PARTES` (`idPARTE`, `fechaParte`, `estado`, `superficie`, `idENCARGADO`, `idFINCA`)
 VALUES 
-    (1, '2024-05-13', 'A', 100, 1, 1, 27123456789),
-    (2, '2024-06-25', 'P', 200, 2, 2, 27234567891),
-    (3, '2024-07-11', 'A', 300, 3, 3, 20123456789),
-    (4, '2024-08-17', 'P', 400, 4, 4, 27345678912),
-    (5, '2024-09-22', 'A', 500, 5, 5, 27456789123),
-    (6, '2024-10-16', 'P', 600, 6, 6, 20234567892),
-    (7, '2024-11-14', 'A', 700, 7, 7, 27567891234),
-    (8, '2024-12-22', 'P', 800, 8, 8, 20345678912),
-    (9, '2025-01-21', 'A', 900, 9, 9, 20456789123),
-    (10, '2025-02-14', 'P', 1000, 10, 10, 20567891234),
-    (11, '2025-03-29', 'A', 1100, 11, 11, 20678912345),
-    (12, '2025-04-01', 'P', 1200, 12, 12, 20789123456),
-    (13, '2025-05-08', 'A', 1300, 13, 13, 20891234567),
-    (14, '2025-06-18', 'P', 1400, 14, 14, 27678912345),
-    (15, '2025-07-07', 'A', 1500, 15, 15, 20357159123),
-    (16, '2025-08-08', 'P', 1600, 16, 16, 27789123456),
-    (17, '2025-09-15', 'A', 1700, 17, 17, 20159357456),
-    (18, '2025-10-23', 'P', 1800, 18, 18, 20753951789),
-    (19, '2025-11-26', 'A', 1900, 19, 19, 20951753123),
-    (20, '2025-12-27', 'P', 2000, 20, 20, 27891234567);
+    (1, '2024-05-13', 'A', 100, 1, 1),
+    (2, '2024-06-25', 'P', 200, 2, 2),
+    (3, '2024-07-11', 'A', 300, 3, 3),
+    (4, '2024-08-17', 'P', 400, 4, 4),
+    (5, '2024-09-22', 'A', 500, 5, 5),
+    (6, '2024-10-16', 'P', 600, 6, 6),
+    (7, '2024-11-14', 'A', 700, 7, 7),
+    (8, '2024-12-22', 'P', 800, 8, 8),
+    (9, '2025-01-21', 'A', 900, 9, 9),
+    (10, '2025-02-14', 'P', 1000, 10, 10),
+    (11, '2025-03-29', 'A', 1100, 11, 11),
+    (12, '2025-04-01', 'P', 1200, 12, 12),
+    (13, '2025-05-08', 'A', 1300, 13, 13),
+    (14, '2025-06-18', 'P', 1400, 14, 14),
+    (15, '2025-07-07', 'A', 1500, 15, 15),
+    (16, '2025-08-08', 'P', 1600, 16, 16),
+    (17, '2025-09-15', 'A', 1700, 17, 17),
+    (18, '2025-10-23', 'P', 1800, 18, 18),
+    (19, '2025-11-26', 'A', 1900, 19, 19),
+    (20, '2025-12-27', 'P', 2000, 20, 20);
 
 -- Populate the table LINEAS_PARTES
 INSERT INTO `LBD2024G06AGROSA`.`LINEAS_PARTES` (`idPARTE`, `idEMPLEADO`, `rol`)
@@ -450,7 +448,7 @@ VALUES
     (1, 11),
     (3, 11), 
     (2, 12), 
-    (3, 12), 
+    (3, 12),
     (3, 13), 
     (5, 13),
     (1, 14),
@@ -461,7 +459,7 @@ VALUES
 	(1, 17),
     (3, 17), 
     (2, 18), 
-    (3, 18), 
+    (3, 18),
     (3, 19), 
     (5, 19),
     (1, 20),
