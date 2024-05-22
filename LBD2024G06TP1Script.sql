@@ -1,24 +1,23 @@
 -- Año: 2024
--- Grupo Nro:
+-- Grupo Nro:06
 -- Integrantes: Grellet Martinoia, Alejandro // Sanchez Mateo 
 -- Tema: AGROSA
 -- Nombre del Esquema (LBD02024G06AGROSA)
 -- Plataforma Windows 10 // Docker Buildx (Docker Inc., v0.9.1) :
 -- Motor y Versión: MySQL SServer 8.0.36
--- GitHub Repositorio: LBD2024G04
+-- GitHub Repositorio: LBD2024G06
 -- GitHub Usuario: AlejandroGrellet // Mateo-Sanchez14
-DROP SCHEMA `LBD2024G06AGROSA`;
+DROP SCHEMA IF EXISTS `LBD2024G06AGROSA`;
 
 CREATE SCHEMA IF NOT EXISTS `LBD2024G06AGROSA` DEFAULT CHARACTER SET utf8;
-
+USE `LBD2024G06AGROSA`;
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`USUARIOS` (
   `idUSUARIOS` INT(11) NOT NULL AUTO_INCREMENT,
   `usuario` VARCHAR(30) NOT NULL,
   `password` VARCHAR(30) NOT NULL,
   `tipoUsuario` ENUM('Administrador', 'Secretario') DEFAULT 'Secretario' NOT NULL,
   `estado` CHAR(1) NOT NULL DEFAULT 'A',
-  PRIMARY KEY (`idUSUARIOS`),
-  UNIQUE INDEX `idUsuario_UNIQUE` (`idUSUARIOS` ASC) VISIBLE)
+  PRIMARY KEY (`idUSUARIOS`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
@@ -28,7 +27,7 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`RUBROS` (
   `tipoRubro` ENUM('Egreso', 'Ingreso') NOT NULL,
   `estado` CHAR(1) NOT NULL,
   PRIMARY KEY (`idRUBROS`),
-  UNIQUE INDEX `idRUBROS_UNIQUE` (`idRUBROS` ASC) VISIBLE)
+  CONSTRAINT Check_Estado_Rubros CHECK (`estado` = 'A' OR `estado`= 'B') ) -- A = ACtivo, B = Baja
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
@@ -39,12 +38,12 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`MOVIMIENTOS` (
   `fecha` DATE NOT NULL,
   `monto` DECIMAL NOT NULL,
   `detalle` VARCHAR(80) NULL DEFAULT NULL,
-  `estado` CHAR(1) NOT NULL,
+  `estado` CHAR(1) NOT NULL DEFAULT 'I',
   PRIMARY KEY (`idMOVIMIENTOS`, `idRUBROS`),
-  UNIQUE INDEX `idMOVIMIENTOS_UNIQUE` (`idMOVIMIENTOS` ASC) VISIBLE,
   INDEX `FECHA_MOVIMIENTOS` (`fecha` ASC) VISIBLE,
   INDEX `fk_MOVIMIENTOS_RUBROS_idx` (`idRUBROS` ASC) VISIBLE,
   CONSTRAINT Check_Montos CHECK (`tipoMovimiento`= 'E' AND `monto` <=0 OR `tipoMovimiento`= 'I' AND `monto` >=0 ),
+  CONSTRAINT Check_Estado_Movs CHECK (`estado` = 'P' OR `estado`= 'C'), -- P = Pendiente, C = Cargado
   CONSTRAINT `fk_MOVIMIENTOS_RUBROS`
     FOREIGN KEY (`idRUBROS`)
     REFERENCES `LBD2024G06AGROSA`.`RUBROS` (`idRUBROS`)
@@ -61,8 +60,8 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`EMPLEADOS` (
   `apellidos` VARCHAR(30) NOT NULL,
   `estado` CHAR(1) NOT NULL DEFAULT 'A',
   CONSTRAINT EMPLEADOS_CUIL_LEN CHECK (CHAR_LENGTH(CAST(`cuil` AS CHAR)) = 11),
-  PRIMARY KEY (`idEMPLEADO`),
-  UNIQUE INDEX `idEMPLEADOS_UNIQUE` (`idEMPLEADO` ASC) VISIBLE)
+  CONSTRAINT Check_Estado_Empleados CHECK (`estado` = 'A' OR `estado`= 'B'), -- A = ACtivo, B = Baja
+  PRIMARY KEY (`idEMPLEADO`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
@@ -74,6 +73,7 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`PROPIETARIOS` (
   `apellidos` VARCHAR(30) NOT NULL,
   `estado` CHAR(1) NOT NULL DEFAULT 'A',
   CONSTRAINT PROPIETARIOS_CUIL_LEN CHECK (CHAR_LENGTH(CAST(`cuil` AS CHAR)) = 11),
+  CONSTRAINT Check_Estado_Propietarios CHECK (`estado` = 'A' OR `estado`= 'B'), -- A = ACtivo, B = Baja
   PRIMARY KEY (`cuil`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
@@ -92,10 +92,7 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`FINCAS` (
     ON DELETE CASCADE
     ON UPDATE NO ACTION,
   PRIMARY KEY (`idFINCA`),
-  UNIQUE INDEX `idFINCAS_UNIQUE` (`idFINCA` ASC) VISIBLE,
-  UNIQUE INDEX `longitud_UNIQUE` (`longitud` ASC) VISIBLE,
-  UNIQUE INDEX `latitud_UNIQUE` (`latitud` ASC) VISIBLE)
-  
+  UNIQUE INDEX `ubicacion_UNIQUE` (`latitud`, `longitud` ASC) VISIBLE)
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
@@ -106,13 +103,13 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`PARTES` (
   `idENCARGADO` INT(11) NOT NULL,
   `idFINCA` INT(11) NOT NULL,
   `fechaParte` DATE NOT NULL,
-  `estado` CHAR(1) NOT NULL,
+  `estado` CHAR(1) NOT NULL DEFAULT 'P',
   `superficie` FLOAT(11) NOT NULL,
   PRIMARY KEY (`idPARTE`),
-  UNIQUE INDEX `idPARTES_UNIQUE` (`idPARTE` ASC) VISIBLE,
   INDEX `FECHA_PARTES` (`fechaParte` ASC) VISIBLE,
   INDEX `idENCARGADO` (`idENCARGADO` ASC) VISIBLE,
   INDEX `idFINCA` (`idFINCA` ASC) VISIBLE,
+  CONSTRAINT Check_Estado_Partes CHECK (`estado` = 'P' OR `estado`= 'C'), -- P = Pendiente, C = Cargado
   CONSTRAINT `fk_PARTES_EMPLEADOS1`
     FOREIGN KEY (`idENCARGADO`)
     REFERENCES `LBD2024G06AGROSA`.`EMPLEADOS` (`idEMPLEADO`)
@@ -153,8 +150,7 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`VEHICULOS` (
   `tipo` VARCHAR(45) NOT NULL,
   `modelo` VARCHAR(45) NOT NULL,
   `funcion` VARCHAR(45) NULL DEFAULT NULL,
-  PRIMARY KEY (`idVEHICULO`),
-  UNIQUE INDEX `idVEHICULO_UNIQUE` (`idVEHICULO` ASC) VISIBLE)
+  PRIMARY KEY (`idVEHICULO`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
@@ -203,26 +199,26 @@ VALUES ('Venta', 'Ingreso', 'A'),
 -- Populate the table MOVIMIENTOS
 INSERT INTO `LBD2024G06AGROSA`.`MOVIMIENTOS` (`idMOVIMIENTOS`, `tipoMovimiento`, `fecha`, `monto`, `detalle`, `estado`,
                                               `idRUBROS`)
-VALUES (1, 'I', '2024-01-01', 1000, 'Venta de Trigo', 'A', 1),
-       (2, 'E', '2024-01-01', -500, 'Pago de Sueldos', 'A', 2),
-       (3, 'E', '2024-01-01', -200, 'Compra de Semillas', 'A', 3),
-       (4, 'E', '2024-01-01', -300, 'Compra de Fertilizantes', 'A', 3),
-       (5, 'E', '2024-01-01', -400, 'Compra de Herbicidas', 'A', 3),
-       (6, 'E', '2024-01-01', -500, 'Compra de Maquinaria', 'A', 4),
-       (7, 'E', '2024-01-01', -600, 'Pago de Impuestos', 'A', 5),
-       (8, 'I', '2024-01-01', 700, 'Venta de Servicios', 'A', 6),
-       (9, 'E', '2024-01-01', -800, 'Pago de Arriendo', 'A', 7),
-       (10, 'I', '2024-01-01', 900, 'Venta de Trigo', 'A', 1),
-       (11, 'E', '2024-01-01', -1000, 'Pago de Sueldos', 'A', 2),
-       (12, 'E', '2024-01-01', -1100, 'Compra de Semillas', 'A', 3),
-       (13, 'E', '2024-01-01', -1200, 'Compra de Fertilizantes', 'A', 3),
-       (14, 'E', '2024-01-01', -1300, 'Compra de Herbicidas', 'A', 3),
-       (15, 'E', '2024-01-01', -1400, 'Compra de Maquinaria', 'A', 4),
-       (16, 'E', '2024-01-01', -1500, 'Pago de Impuestos', 'A', 5),
-       (17, 'I', '2024-01-01', 1600, 'Venta de Servicios', 'A', 6),
-       (18, 'E', '2024-01-01', -1700, 'Pago de Arriendo', 'A', 7),
-       (19, 'I', '2024-01-01', 1800, 'Venta de Trigo', 'A', 1),
-       (20, 'E', '2024-01-01', -1900, 'Pago de Sueldos', 'A', 2);
+VALUES (1, 'I', '2024-01-01', 1000, 'Venta de Trigo', 'P', 1),
+       (2, 'E', '2024-01-01', -500, 'Pago de Sueldos', 'P', 2),
+       (3, 'E', '2024-01-01', -200, 'Compra de Semillas', 'P', 3),
+       (4, 'E', '2024-01-01', -300, 'Compra de Fertilizantes', 'P', 3),
+       (5, 'E', '2024-01-01', -400, 'Compra de Herbicidas', 'P', 3),
+       (6, 'E', '2024-01-01', -500, 'Compra de Maquinaria', 'P', 4),
+       (7, 'E', '2024-01-01', -600, 'Pago de Impuestos', 'P', 5),
+       (8, 'I', '2024-01-01', 700, 'Venta de Servicios', 'C', 6),
+       (9, 'E', '2024-01-01', -800, 'Pago de Arriendo', 'C', 7),
+       (10, 'I', '2024-01-01', 900, 'Venta de Trigo', 'C', 1),
+       (11, 'E', '2024-01-01', -1000, 'Pago de Sueldos', 'C', 2),
+       (12, 'E', '2024-01-01', -1100, 'Compra de Semillas', 'P', 3),
+       (13, 'E', '2024-01-01', -1200, 'Compra de Fertilizantes', 'P', 3),
+       (14, 'E', '2024-01-01', -1300, 'Compra de Herbicidas', 'P', 3),
+       (15, 'E', '2024-01-01', -1400, 'Compra de Maquinaria', 'P', 4),
+       (16, 'E', '2024-01-01', -1500, 'Pago de Impuestos', 'P', 5),
+       (17, 'I', '2024-01-01', 1600, 'Venta de Servicios', 'P', 6),
+       (18, 'E', '2024-01-01', -1700, 'Pago de Arriendo', 'P', 7),
+       (19, 'I', '2024-01-01', 1800, 'Venta de Trigo', 'P', 1),
+       (20, 'E', '2024-01-01', -1900, 'Pago de Sueldos', 'C', 2);
 
 -- Populate the table EMPLEADOS
 INSERT INTO `LBD2024G06AGROSA`.`EMPLEADOS` (`idEMPLEADO`, `cuil`, `nombres`, `apellidos`, `estado`)
@@ -296,25 +292,25 @@ VALUES (1, 'La Estancia', -34.23722, -51.281592, 27891234567),
 -- Populate the table PARTES
 INSERT INTO `LBD2024G06AGROSA`.`PARTES` (`idPARTE`, `fechaParte`, `estado`, `superficie`, `idENCARGADO`, `idFINCA`)
 VALUES 
-    (1, '2024-05-13', 'A', 100, 1, 1),
+    (1, '2024-05-13', 'C', 100, 1, 1),
     (2, '2024-06-25', 'P', 200, 2, 2),
-    (3, '2024-07-11', 'A', 300, 3, 3),
+    (3, '2024-07-11', 'C', 300, 3, 3),
     (4, '2024-08-17', 'P', 400, 4, 4),
-    (5, '2024-09-22', 'A', 500, 5, 5),
+    (5, '2024-09-22', 'C', 500, 5, 5),
     (6, '2024-10-16', 'P', 600, 6, 6),
-    (7, '2024-11-14', 'A', 700, 7, 7),
+    (7, '2024-11-14', 'C', 700, 7, 7),
     (8, '2024-12-22', 'P', 800, 8, 8),
-    (9, '2025-01-21', 'A', 900, 9, 9),
+    (9, '2025-01-21', 'C', 900, 9, 9),
     (10, '2025-02-14', 'P', 1000, 10, 10),
-    (11, '2025-03-29', 'A', 1100, 11, 11),
+    (11, '2025-03-29', 'C', 1100, 11, 11),
     (12, '2025-04-01', 'P', 1200, 12, 12),
-    (13, '2025-05-08', 'A', 1300, 13, 13),
+    (13, '2025-05-08', 'C', 1300, 13, 13),
     (14, '2025-06-18', 'P', 1400, 14, 14),
-    (15, '2025-07-07', 'A', 1500, 15, 15),
+    (15, '2025-07-07', 'C', 1500, 15, 15),
     (16, '2025-08-08', 'P', 1600, 16, 16),
-    (17, '2025-09-15', 'A', 1700, 17, 17),
+    (17, '2025-09-15', 'C', 1700, 17, 17),
     (18, '2025-10-23', 'P', 1800, 18, 18),
-    (19, '2025-11-26', 'A', 1900, 19, 19),
+    (19, '2025-11-26', 'C', 1900, 19, 19),
     (20, '2025-12-27', 'P', 2000, 20, 20);
 
 -- Populate the table LINEAS_PARTES
