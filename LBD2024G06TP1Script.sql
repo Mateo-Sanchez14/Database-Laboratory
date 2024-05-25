@@ -557,5 +557,66 @@ VALUES
     (5, 'ARG 255', 20);
     
 COMMIT ;
+-- FUNCIONES
+-- 6. Hacer un ranking con los rubros que más recaudan (por importe) en un rango de fechas.
 
+SELECT RUBROS.rubro, SUM(MOVIMIENTOS.monto) AS total_recaudado
+FROM RUBROS
+INNER JOIN MOVIMIENTOS
+ON RUBROS.idRUBRO = MOVIMIENTOS.idRUBRO
+WHERE fecha BETWEEN '2024-01-01' AND '2024-12-31'
+GROUP BY rubro
+ORDER BY total_recaudado DESC;
+
+-- 7. Hacer un ranking con los productos más recaudan (por cantidad) en un rango de fechas.
+
+SELECT RUBROS.rubro, COUNT(MOVIMIENTOS.idMOVIMIENTO) AS cantidad_de_Movimientos
+FROM RUBROS
+INNER JOIN MOVIMIENTOS
+ON RUBROS.idRUBRO = MOVIMIENTOS.idRUBRO
+WHERE fecha BETWEEN '2024-01-01' AND '2024-12-31'
+GROUP BY RUBROS.rubro
+ORDER BY cantidad_de_Movimientos DESC; 
+
+-- 8. Crear una vista con la funcionalidad del apartado 2.
+
+SELECT V.idVEHICULO, V.tipo, V.modelo, COUNT(*) AS cantidadPartes
+    FROM VEHICULOS V
+    JOIN VEHICULOS_POR_PARTES VP ON V.idVEHICULO = VP.idVEHICULO
+    JOIN PARTES P ON VP.idPARTE = P.idPARTE
+    WHERE V.idVEHICULO = idVEHICULO
+    GROUP BY V.idVEHICULO, V.tipo, V.modelo;
+    
+
+
+-- 9. Crear una copia de la tabla rubros, que además tenga una columna del tipo JSON para 
+-- guardar los movimientos. Llenar esta tabla con los mismos datos del TP1 y resolver la
+-- consulta: Dado un rubro listar todos los movimientos de ese rubro.
+
+DROP TABLE IF EXISTS `LBD2024G06AGROSA`.`RUBROS_JSON` ;
+CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`RUBROS_JSON` AS SELECT * FROM `LBD2024G06AGROSA`.`RUBROS` ;
+SELECT * FROM `LBD2024G06AGROSA`.`RUBROS_JSON`;
+ALTER TABLE `LBD2024G06AGROSA`.`RUBROS_JSON` 
+ADD COLUMN `movimientos` JSON;
+INSERT INTO `RUBROS_JSON` (`rubro`, `tipoRubro`, `estado`
+))
+VALUES ('Venta', 'Ingreso', 'A', JSON_MERGE_PRESERVE(),
+       ('Empleados', 'Egreso', 'A'),
+       ('Insumos', 'Egreso', 'A'),
+       ('Maquinaria', 'Egreso', 'A'),
+       ('Impuestos', 'Egreso', 'A'),
+       ('Servicios', 'Ingreso', 'A'),
+       ('Arriendo', 'Egreso', 'A');
+
+(1, 'I', '2024-01-01', 1000, 'Venta de Trigo', 'P', 1),
+       (2, 'E', '2024-01-01', -500, 'Pago de Sueldos', 'P', 2),
+       (3, 'E', '2024-01-01', -200, 'Compra de Semillas', 'P', 3),
+       (4, 'E', '2024-01-01', -300, 'Compra de Fertilizantes', 'P', 3),
+       (5, 'E', '2024-01-01', -400, 'Compra de Herbicidas', 'P', 3),
+       (6, 'E', '2024-01-01', -500, 'Compra de Maquinaria', 'P', 4),
+       (7, 'E', '2024-01-01', -600, 'Pago de Impuestos', 'P', 5),
+       (8, 'I', '2024-01-01', 700, 'Venta de Servicios', 'C', 6),
+       (9, 'E', '2024-01-01', -800, 'Pago de Arriendo', 'C', 7),
+       (10, 'I', '2024-01-01', 900, 'Venta de Trigo', 'C', 1),
+-- 10: Realizar una vista que considere importante para su modelo. También dejar escrito el enunciado de la misma.
 
