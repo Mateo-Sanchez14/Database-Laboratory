@@ -19,7 +19,7 @@ CREATE TABLE IF NOT EXISTS `USUARIOS` (
   `password` VARCHAR(30) NOT NULL,
   `tipoUsuario` ENUM('Administrador', 'Secretario') DEFAULT 'Secretario' NOT NULL,
   `estado` CHAR(1) NOT NULL DEFAULT 'A',
-  PRIMARY KEY (`idUSUARIOS`))
+  PRIMARY KEY (`idUSUARIO`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `RUBROS` (
   `rubro` VARCHAR(45) NOT NULL,
   `tipoRubro` ENUM('Egreso', 'Ingreso') NOT NULL,
   `estado` CHAR(1) NOT NULL,
-  PRIMARY KEY (`idRUBROS`),
+  PRIMARY KEY (`idRUBRO`),
   CONSTRAINT Check_Estado_Rubros CHECK (`estado` = 'A' OR `estado`= 'B') ) -- A = ACtivo, B = Baja
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
@@ -41,9 +41,9 @@ CREATE TABLE IF NOT EXISTS `MOVIMIENTOS` (
   `monto` DECIMAL NOT NULL,
   `detalle` VARCHAR(80) NULL DEFAULT NULL,
   `estado` CHAR(1) NOT NULL DEFAULT 'I',
-  PRIMARY KEY (`idMOVIMIENTOS`, `idRUBROS`),
+  PRIMARY KEY (`idMOVIMIENTO`, `idRUBRO`),
   INDEX `FECHA_MOVIMIENTOS` (`fecha` ASC) VISIBLE,
-  INDEX `fk_MOVIMIENTOS_RUBROS_idx` (`idRUBROS` ASC) VISIBLE,
+  INDEX `fk_MOVIMIENTOS_RUBROS_idx` (`idRUBRO` ASC) VISIBLE,
   CONSTRAINT Check_Montos CHECK (`tipoMovimiento`= 'E' AND `monto` <=0 OR `tipoMovimiento`= 'I' AND `monto` >=0 ),
   CONSTRAINT Check_Estado_Movs CHECK (`estado` = 'P' OR `estado`= 'C'), -- P = Pendiente, C = Cargado
   CONSTRAINT `fk_MOVIMIENTOS_RUBROS`
@@ -71,7 +71,6 @@ DEFAULT CHARACTER SET = utf8;
 
 CREATE TABLE IF NOT EXISTS `PROPIETARIOS` (
   `cuil` BIGINT(11) UNSIGNED NOT NULL,
-  `cuil` BIGINT(11) UNSIGNED NOT NULL,
   `nombres` VARCHAR(30) NOT NULL,
   `apellidos` VARCHAR(30) NOT NULL,
   `estado` CHAR(1) NOT NULL DEFAULT 'A',
@@ -89,11 +88,6 @@ CREATE TABLE IF NOT EXISTS `FINCAS` (
   `nombreFinca` VARCHAR(45) NOT NULL,
   `latitud` FLOAT(11) NULL DEFAULT NULL,
   `longitud` FLOAT(11) NULL DEFAULT NULL,
-  CONSTRAINT `fk_PROPIETARIOS`
-    FOREIGN KEY (`cuilPROPIETARIO`)
-    REFERENCES `PROPIETARIOS` (`cuil`)
-    ON DELETE CASCADE
-    ON UPDATE NO ACTION,
   CONSTRAINT `fk_PROPIETARIOS`
     FOREIGN KEY (`cuilPROPIETARIO`)
     REFERENCES `PROPIETARIOS` (`cuil`)
@@ -218,8 +212,8 @@ VALUES ('Venta', 'Ingreso', 'A'),
 
 
 -- Populate the table MOVIMIENTOS
-INSERT INTO `MOVIMIENTOS` (`idMOVIMIENTOS`, `tipoMovimiento`, `fecha`, `monto`, `detalle`, `estado`,
-                                              `idRUBROS`)
+INSERT INTO `MOVIMIENTOS` (`idMOVIMIENTO`, `tipoMovimiento`, `fecha`, `monto`, `detalle`, `estado`,
+                                              `idRUBRO`)
 VALUES (1, 'I', '2024-01-01', 1000, 'Venta de Trigo', 'P', 1),
        (2, 'E', '2024-01-01', -500, 'Pago de Sueldos', 'P', 2),
        (3, 'E', '2024-01-01', -200, 'Compra de Semillas', 'P', 3),
@@ -563,18 +557,18 @@ COMMIT ;
 
 # 1. Dado un propietario, listar todas sus fincas entre ciertas latitudes y longitudes dadas.
 
-CREATE PROCEDURE `LBD2024G06AGROSA`.`SP_LISTAR_FINCAS` (IN `latitud1` FLOAT, IN `latitud2` FLOAT, IN `longitud1` FLOAT, IN `longitud2` FLOAT)
+CREATE PROCEDURE `SP_LISTAR_FINCAS` (IN `latitud1` FLOAT, IN `latitud2` FLOAT, IN `longitud1` FLOAT, IN `longitud2` FLOAT)
 BEGIN
     SELECT P.nombres, P.apellidos, F.nombreFinca, F.latitud, F.longitud
     FROM PROPIETARIOS P
     JOIN FINCAS F ON P.cuil = F.cuilPROPIETARIO
     WHERE F.latitud BETWEEN latitud1 AND latitud2
     AND F.longitud BETWEEN longitud1 AND longitud2;
-END
+END;
 
 
 # 2. Realizar un listado de cantidad de partes agrupadas por vehículos.
-CREATE PROCEDURE `LBD2024G06AGROSA`.`SP_PARTES_POR_VEHICULO` ( IN idVEHICULO INT )
+CREATE PROCEDURE `SP_PARTES_POR_VEHICULO` ( IN idVEHICULO INT )
 BEGIN
     SELECT V.idVEHICULO, V.tipo, V.modelo, COUNT(*) AS cantidadPartes
     FROM VEHICULOS V
@@ -586,7 +580,7 @@ END ;
 
 # 3. Dado un año y mes, mostrar la diferencia entre el total de superficie de todos los partes
 # de los vehículoe en ese mes, con el mismo mes de otro año también dado.
-CREATE PROCEDURE `LBD2024G06AGROSA`.`SP_DIFERENCIA_SUPERFICIE` ( IN anio1 INT, IN mes1 INT, IN anio2 INT, IN mes2 INT )
+CREATE PROCEDURE `SP_DIFERENCIA_SUPERFICIE` ( IN anio1 INT, IN mes1 INT, IN anio2 INT, IN mes2 INT )
 BEGIN
     SELECT SUM(CASE WHEN YEAR(fechaParte) = anio1 AND MONTH(fechaParte) = mes1 THEN superficie ELSE 0 END) -
            SUM(CASE WHEN YEAR(fechaParte) = anio2 AND MONTH(fechaParte) = mes2 THEN superficie ELSE 0 END) AS diferencia
@@ -596,7 +590,7 @@ END ;
 # 4. Dado un rango de fechas, mostrar mes a mes la cantidad de partes por finca. El formato
 # deberá ser: més, finca, total de partes
 
-CREATE PROCEDURE `LBD2024G06AGROSA`.`SP_PARTES_POR_FINCA` ( IN fechaInicio DATE, IN fechaFin DATE )
+CREATE PROCEDURE `SP_PARTES_POR_FINCA` ( IN fechaInicio DATE, IN fechaFin DATE )
 BEGIN
     SELECT MONTH(fechaParte) AS mes, F.nombreFinca, COUNT(*) AS totalPartes
     FROM PARTES P
@@ -608,7 +602,7 @@ END ;
 # 5. Hacer un ranking con los vehículos que más partes tengan (por cantidad) en un rango de
 # fechas.
 
-CREATE PROCEDURE `LBD2024G06AGROSA`.`SP_RANKING_VEHICULOS` ( IN fechaInicio DATE, IN fechaFin DATE )
+CREATE PROCEDURE `SP_RANKING_VEHICULOS` ( IN fechaInicio DATE, IN fechaFin DATE )
 BEGIN
     SELECT V.idVEHICULO, V.tipo, V.modelo, COUNT(*) AS cantidadPartes
     FROM VEHICULOS V
