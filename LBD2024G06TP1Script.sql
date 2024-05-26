@@ -17,20 +17,20 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`USUARIOS` (
   `password` VARCHAR(30) NOT NULL,
   `tipoUsuario` ENUM('Administrador', 'Secretario') DEFAULT 'Secretario' NOT NULL,
   `estado` CHAR(1) NOT NULL DEFAULT 'A',
-  PRIMARY KEY (`idUSUARIOS`))
+  PRIMARY KEY (`idUSUARIO`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`RUBROS` (
   `idRUBRO` INT(11) NOT NULL AUTO_INCREMENT,
   `rubro` VARCHAR(45) NOT NULL,
-  `tipoRubro` ENUM('Egreso', 'Ingreso') NOT NULL,
   `estado` CHAR(1) NOT NULL,
-  PRIMARY KEY (`idRUBROS`),
+  PRIMARY KEY (`idRUBRO`),
   CONSTRAINT Check_Estado_Rubros CHECK (`estado` = 'A' OR `estado`= 'B') ) -- A = ACtivo, B = Baja
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
+-- CORRECCIÓN añadido constraint para la columna estado
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`MOVIMIENTOS` (
   `idRUBRO` INT(11) NOT NULL,
   `idMOVIMIENTO` INT(11) NOT NULL AUTO_INCREMENT,
@@ -39,9 +39,9 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`MOVIMIENTOS` (
   `monto` DECIMAL NOT NULL,
   `detalle` VARCHAR(80) NULL DEFAULT NULL,
   `estado` CHAR(1) NOT NULL DEFAULT 'I',
-  PRIMARY KEY (`idMOVIMIENTOS`, `idRUBROS`),
+  PRIMARY KEY (`idMOVIMIENTO`, `idRUBRO`),
   INDEX `FECHA_MOVIMIENTOS` (`fecha` ASC) VISIBLE,
-  INDEX `fk_MOVIMIENTOS_RUBROS_idx` (`idRUBROS` ASC) VISIBLE,
+  INDEX `fk_MOVIMIENTOS_RUBROS_idx` (`idRUBRO` ASC) VISIBLE,
   CONSTRAINT Check_Montos CHECK (`tipoMovimiento`= 'E' AND `monto` <=0 OR `tipoMovimiento`= 'I' AND `monto` >=0 ),
   CONSTRAINT Check_Estado_Movs CHECK (`estado` = 'P' OR `estado`= 'C'), -- P = Pendiente, C = Cargado
   CONSTRAINT `fk_MOVIMIENTOS_RUBROS`
@@ -49,10 +49,10 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`MOVIMIENTOS` (
     REFERENCES `LBD2024G06AGROSA`.`RUBROS` (`idRUBRO`)
     ON DELETE CASCADE
     ON UPDATE NO ACTION)
-  
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
+-- CORRECCIÓN añadido constraint para la columna estado
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`EMPLEADOS` (
   `idEMPLEADO` INT(11) NOT NULL AUTO_INCREMENT,
   `cuil` BIGINT(11) UNSIGNED NOT NULL,
@@ -66,9 +66,8 @@ ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
 -- Added table PROPIETARIOS
-
+-- CORRECCIÓN añadido constraint para la columna estado
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`PROPIETARIOS` (
-  `cuil` BIGINT(11) UNSIGNED NOT NULL,
   `cuil` BIGINT(11) UNSIGNED NOT NULL,
   `nombres` VARCHAR(30) NOT NULL,
   `apellidos` VARCHAR(30) NOT NULL,
@@ -87,23 +86,19 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`FINCAS` (
   `nombreFinca` VARCHAR(45) NOT NULL,
   `latitud` FLOAT(11) NULL DEFAULT NULL,
   `longitud` FLOAT(11) NULL DEFAULT NULL,
+  INDEX `fk_FINCAS_PROPIETARIOS_idx` (`cuilPROPIETARIO` ASC) VISIBLE,
+  UNIQUE INDEX `ubicacion_UNIQUE` (`latitud`, `longitud` ASC) VISIBLE,
   CONSTRAINT `fk_PROPIETARIOS`
     FOREIGN KEY (`cuilPROPIETARIO`)
     REFERENCES `LBD2024G06AGROSA`.`PROPIETARIOS` (`cuil`)
     ON DELETE CASCADE
     ON UPDATE NO ACTION,
-  CONSTRAINT `fk_PROPIETARIOS`
-    FOREIGN KEY (`cuilPROPIETARIO`)
-    REFERENCES `LBD2024G06AGROSA`.`PROPIETARIOS` (`cuil`)
-    ON DELETE CASCADE
-    ON UPDATE NO ACTION,
-  PRIMARY KEY (`idFINCA`),
-  UNIQUE INDEX `ubicacion_UNIQUE` (`latitud`, `longitud` ASC) VISIBLE)
+  PRIMARY KEY (`idFINCA`))
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
 -- Updated table PARTES 
-
+-- CORRECCIÓN añadido constraint para la columna estado
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`PARTES` (
   `idPARTE` INT(11) NOT NULL AUTO_INCREMENT,
   `idENCARGADO` INT(11) NOT NULL,
@@ -113,8 +108,8 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`PARTES` (
   `superficie` FLOAT(11) NOT NULL,
   PRIMARY KEY (`idPARTE`),
   INDEX `FECHA_PARTES` (`fechaParte` ASC) VISIBLE,
-  INDEX `idENCARGADO` (`idENCARGADO` ASC) VISIBLE,
-  INDEX `idFINCA` (`idFINCA` ASC) VISIBLE,
+  INDEX `fk_PARTES_ENCARGADOS_idx` (`idENCARGADO` ASC) VISIBLE,
+  INDEX `fk_PARTES_FINCAS_idx` (`idFINCA` ASC) VISIBLE,
   CONSTRAINT Check_Estado_Partes CHECK (`estado` = 'P' OR `estado`= 'C'), -- P = Pendiente, C = Cargado
   CONSTRAINT `fk_PARTES_EMPLEADOS1`
     FOREIGN KEY (`idENCARGADO`)
@@ -134,8 +129,8 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`LINEAS_PARTES` (
   `idEMPLEADO` INT(11) NOT NULL,
   `rol` CHAR(1) NULL DEFAULT NULL,
   PRIMARY KEY (`idPARTE`, `idEMPLEADO`),
-  INDEX `fk_PARTES_has_EMPLEADOS_EMPLEADOS1_idx` (`idEMPLEADO` ASC) VISIBLE,
-  INDEX `fk_PARTES_has_EMPLEADOS_PARTES1_idx` (`idPARTE` ASC) VISIBLE,
+  INDEX `fk_LINEAS_PARTES_EMPLEADOS_idx` (`idEMPLEADO` ASC) VISIBLE,
+  INDEX `fk_LINEAS_PARTES_PARTES_idx` (`idPARTE` ASC) VISIBLE,
   CONSTRAINT `fk_PARTES_has_EMPLEADOS_PARTES1`
     FOREIGN KEY (`idPARTE`)
     REFERENCES `LBD2024G06AGROSA`.`PARTES` (`idPARTE`)
@@ -150,9 +145,10 @@ ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
 -- Update with new Tables 
+-- CORRECCIÓN agregada clave compuesta idVEHICULO + patente
 
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`VEHICULOS` (
-  `idVEHICULO` INT(11) NOT NULL,
+  `idVEHICULO` INT(11) NOT NULL AUTO_INCREMENT,
   `patente` VARCHAR(11) NOT NULL,
   `tipo` VARCHAR(45) NOT NULL,
   `modelo` VARCHAR(45) NOT NULL,
@@ -166,28 +162,29 @@ CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`VEHICULOS` (
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
 
+-- AGREGAR idVEHICULOS_POR_PARTES
 CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`VEHICULOS_POR_PARTES` (
+  `idVEHICULOS_POR_PARTES` INT NOT NULL AUTO_INCREMENT,
   `idVEHICULO` INT(11) NOT NULL,
   `patente` VARCHAR (11) NOT NULL,
   `idPARTE` INT(11) NOT NULL,
-  PRIMARY KEY (`idVEHICULO`, `patente`, `idPARTE`),
+  PRIMARY KEY (`idVEHICULOS_POR_PARTES`),
+  INDEX `fk_VEHICULOS_POR_PARTES_VEHICULOS_idx` (`idVEHICULO`,`patente` ASC) VISIBLE,
+  INDEX `fk_VEHICULOS_POR_PARTES_PARTES_idx` (`idPARTE` ASC) VISIBLE,
   CONSTRAINT `fk_VEHICULOS_POR_PARTES1`
-    FOREIGN KEY (`idVEHICULO`)
-    REFERENCES `LBD2024G06AGROSA`.`VEHICULOS` (`idVEHICULO`)
+    FOREIGN KEY (`idVEHICULO`, `patente`)
+    REFERENCES `LBD2024G06AGROSA`.`VEHICULOS` (`idVEHICULO`,`patente`)
     ON DELETE CASCADE
     ON UPDATE NO ACTION,
   CONSTRAINT `fk_VEHICULOS_POR_PARTES2`
-    FOREIGN KEY (`patente`)
-    REFERENCES `LBD2024G06AGROSA`.`VEHICULOS` (`patente`)
-    ON DELETE CASCADE
-    ON UPDATE NO ACTION,
-  CONSTRAINT `fk_VEHICULOS_POR_PARTES3`
     FOREIGN KEY (`idPARTE`)
     REFERENCES `LBD2024G06AGROSA`.`PARTES` (`idPARTE`)
     ON DELETE CASCADE
-    ON UPDATE NO ACTION)
+    ON UPDATE NO ACTION
+    )
 ENGINE = InnoDB
 DEFAULT CHARACTER SET = utf8;
+
 
 
 -- Populate all the Tables with at least 20 rows each
@@ -205,39 +202,38 @@ VALUES ('JohnDoe', 'password1', 'Administrador', 1),
 
 -- Populate the table RUBROS
 
-INSERT INTO `LBD2024G06AGROSA`.`RUBROS` (`rubro`, `tipoRubro`, `estado`)
-VALUES ('Venta', 'Ingreso', 'A'),
-       ('Empleados', 'Egreso', 'A'),
-       ('Insumos', 'Egreso', 'A'),
-       ('Maquinaria', 'Egreso', 'A'),
-       ('Impuestos', 'Egreso', 'A'),
-       ('Servicios', 'Ingreso', 'A'),
-       ('Arriendo', 'Egreso', 'A');
+INSERT INTO `LBD2024G06AGROSA`.`RUBROS` (`rubro`, `estado`)
+VALUES ('Venta', 'A'),
+       ('Empleados',  'A'),
+       ('Insumos', 'A'),
+       ('Maquinaria', 'A'),
+       ('Impuestos', 'A'),
+       ('Servicios', 'A'),
+       ('Arriendo', 'A');
        
 
 -- Populate the table MOVIMIENTOS
-INSERT INTO `LBD2024G06AGROSA`.`MOVIMIENTOS` (`idMOVIMIENTOS`, `tipoMovimiento`, `fecha`, `monto`, `detalle`, `estado`,
-                                              `idRUBROS`)
-VALUES (1, 'I', '2024-01-01', 1000, 'Venta de Trigo', 'P', 1),
-       (2, 'E', '2024-01-01', -500, 'Pago de Sueldos', 'P', 2),
-       (3, 'E', '2024-01-01', -200, 'Compra de Semillas', 'P', 3),
-       (4, 'E', '2024-01-01', -300, 'Compra de Fertilizantes', 'P', 3),
-       (5, 'E', '2024-01-01', -400, 'Compra de Herbicidas', 'P', 3),
-       (6, 'E', '2024-01-01', -500, 'Compra de Maquinaria', 'P', 4),
-       (7, 'E', '2024-01-01', -600, 'Pago de Impuestos', 'P', 5),
-       (8, 'I', '2024-01-01', 700, 'Venta de Servicios', 'C', 6),
-       (9, 'E', '2024-01-01', -800, 'Pago de Arriendo', 'C', 7),
-       (10, 'I', '2024-01-01', 900, 'Venta de Trigo', 'C', 1),
-       (11, 'E', '2024-01-01', -1000, 'Pago de Sueldos', 'C', 2),
-       (12, 'E', '2024-01-01', -1100, 'Compra de Semillas', 'P', 3),
-       (13, 'E', '2024-01-01', -1200, 'Compra de Fertilizantes', 'P', 3),
-       (14, 'E', '2024-01-01', -1300, 'Compra de Herbicidas', 'P', 3),
-       (15, 'E', '2024-01-01', -1400, 'Compra de Maquinaria', 'P', 4),
-       (16, 'E', '2024-01-01', -1500, 'Pago de Impuestos', 'P', 5),
-       (17, 'I', '2024-01-01', 1600, 'Venta de Servicios', 'P', 6),
-       (18, 'E', '2024-01-01', -1700, 'Pago de Arriendo', 'P', 7),
-       (19, 'I', '2024-01-01', 1800, 'Venta de Trigo', 'P', 1),
-       (20, 'E', '2024-01-01', -1900, 'Pago de Sueldos', 'C', 2);
+INSERT INTO `LBD2024G06AGROSA`.`MOVIMIENTOS` (`idMOVIMIENTO`, `tipoMovimiento`, `fecha`, `monto`, `detalle`, `estado`, `idRUBRO`)
+VALUES (1, 'I', '2023-09-15', 1000, 'Venta de Trigo', 'P', 1),
+       (2, 'E', '2023-10-02', -500, 'Pago de Sueldos', 'P', 2),
+       (3, 'E', '2023-11-20', -200, 'Compra de Semillas', 'P', 3),
+       (4, 'E', '2024-01-12', -300, 'Compra de Fertilizantes', 'P', 3),
+       (5, 'E', '2023-12-05', -400, 'Compra de Herbicidas', 'P', 3),
+       (6, 'E', '2024-02-15', -500, 'Compra de Maquinaria', 'P', 4),
+       (7, 'E', '2023-11-25', -600, 'Pago de Impuestos', 'P', 5),
+       (8, 'I', '2023-12-28', 700, 'Venta de Servicios', 'C', 6),
+       (9, 'E', '2024-01-17', -800, 'Pago de Arriendo', 'C', 7),
+       (10, 'I', '2024-03-15', 900, 'Venta de Trigo', 'C', 1),
+       (11, 'E', '2024-02-01', -1000, 'Pago de Sueldos', 'C', 2),
+       (12, 'E', '2024-04-09', -1100, 'Compra de Semillas', 'P', 3),
+       (13, 'E', '2023-10-13', -1200, 'Compra de Fertilizantes', 'P', 3),
+       (14, 'E', '2024-05-05', -1300, 'Compra de Herbicidas', 'P', 3),
+       (15, 'E', '2024-01-22', -1400, 'Compra de Maquinaria', 'P', 4),
+       (16, 'E', '2023-12-10', -1500, 'Pago de Impuestos', 'P', 5),
+       (17, 'I', '2024-03-19', 1600, 'Venta de Servicios', 'P', 6),
+       (18, 'E', '2024-05-02', -1700, 'Pago de Arriendo', 'P', 7),
+       (19, 'I', '2024-04-21', 1800, 'Venta de Trigo', 'P', 1),
+       (20, 'E', '2024-03-01', -1900, 'Pago de Sueldos', 'C', 2);
 
 -- Populate the table EMPLEADOS
 INSERT INTO `LBD2024G06AGROSA`.`EMPLEADOS` (`idEMPLEADO`, `cuil`, `nombres`, `apellidos`, `estado`)
@@ -367,7 +363,7 @@ VALUES 	(1, 15, 'E'),
         (2, 13, 'O'),
         
         (3, 15, 'E'), 
-        (3, 4, 'O'), 
+        (3, 4, 'O'), -- 
         (3, 7, 'O'),
         
         (4, 6, 'E'), 
@@ -379,7 +375,7 @@ VALUES 	(1, 15, 'E'),
         (5, 13, 'E'), 
         (5, 25, 'O'), 
         (5, 16, 'O'), 
-        (5, 4, 'O'), 
+        (5, 4, 'O'), -- 
         (5, 15, 'O'),
         
         (6, 17, 'E'), 
@@ -404,7 +400,7 @@ VALUES 	(1, 15, 'E'),
         (9, 14, 'O'), 
         (9, 27, 'O'), 
         
-        (10, 4, 'E'), 
+        (10, 4, 'E'), -- 
         (10, 9, 'O'), 
         (10, 21, 'O'),
         
@@ -418,7 +414,7 @@ VALUES 	(1, 15, 'E'),
         (12, 21, 'O'), 
         (12, 20, 'O'),
         
-        (13, 4, 'E'), 
+        (13, 4, 'E'), -- 
         (13, 12, 'O'), 
         (13, 24, 'O'), 
         (13, 26, 'O'), 
@@ -430,7 +426,7 @@ VALUES 	(1, 15, 'E'),
         (15, 10, 'E'), 
         (15, 2, 'O'), 
         (15, 8, 'O'), 
-        (15, 4, 'O'), 
+        (15, 4, 'O'), -- 
         (15, 15, 'O'),
         
         (16, 8, 'E'), 
@@ -486,7 +482,7 @@ VALUES 	(1, 15, 'E'),
         
         (27, 6, 'E'), 
         (27, 15, 'O'), 
-        (27, 4, 'O'), 
+        (27, 4, 'O'), -- 
         (27, 2, 'O'),
         
         (28, 30, 'E'), 
@@ -533,7 +529,7 @@ VALUES
     (4, 'LG 420 BT', 9),
     (1, 'STR 909', 10),
     (2, 'AB 898 ZG', 10), 
-    (5, 'LG 420 BT', 10), 
+    (4, 'LG 420 BT', 10), 
     (1, 'STR 909', 11),
     (3, 'RGB 041', 11), 
     (2, 'AB 898 ZG', 12), 
@@ -558,65 +554,114 @@ VALUES
     
 COMMIT ;
 -- FUNCIONES
+USE `LBD2024G06AGROSA`;
 -- 6. Hacer un ranking con los rubros que más recaudan (por importe) en un rango de fechas.
 
-SELECT RUBROS.rubro, SUM(MOVIMIENTOS.monto) AS total_recaudado
-FROM RUBROS
-INNER JOIN MOVIMIENTOS
-ON RUBROS.idRUBRO = MOVIMIENTOS.idRUBRO
-WHERE fecha BETWEEN '2024-01-01' AND '2024-12-31'
-GROUP BY rubro
-ORDER BY total_recaudado DESC;
+DELIMITER $$
+CREATE PROCEDURE `PUNTO 6` (IN fecha_inicio DATE, IN fecha_fin DATE )
+BEGIN
+	SELECT R.rubro, SUM(M.monto) AS total_recaudado
+	FROM RUBROS R
+	INNER JOIN MOVIMIENTOS M
+	ON R.idRUBRO = M.idRUBRO
+	WHERE fecha BETWEEN fecha_inicio AND fecha_fin
+	GROUP BY rubro
+	ORDER BY total_recaudado DESC;
+END$$
+CALL `PUNTO 6` ('2023-01-01', '2023-12-31');
 
--- 7. Hacer un ranking con los productos más recaudan (por cantidad) en un rango de fechas.
+-- 7. Hacer un ranking con los rubros más recaudan (por cantidad) en un rango de fechas.
 
-SELECT RUBROS.rubro, COUNT(MOVIMIENTOS.idMOVIMIENTO) AS cantidad_de_Movimientos
-FROM RUBROS
-INNER JOIN MOVIMIENTOS
-ON RUBROS.idRUBRO = MOVIMIENTOS.idRUBRO
-WHERE fecha BETWEEN '2024-01-01' AND '2024-12-31'
-GROUP BY RUBROS.rubro
-ORDER BY cantidad_de_Movimientos DESC; 
+DELIMITER $$
+CREATE PROCEDURE `PUNTO 7` (IN fecha_inicio DATE, IN fecha_fin DATE )
+BEGIN
+	SELECT R.rubro, COUNT(M.idMOVIMIENTO) AS cantidad_de_Movimientos
+    FROM RUBROS R
+    INNER JOIN MOVIMIENTOS M
+    ON R.idRUBRO = M.idRUBRO
+    WHERE fecha BETWEEN fecha_inicio AND fecha_fin
+    GROUP BY R.rubro
+    ORDER BY cantidad_de_Movimientos DESC; 
+END$$
+CALL `PUNTO 7` ('2023-01-01', '2023-12-31');
 
 -- 8. Crear una vista con la funcionalidad del apartado 2.
-
-SELECT V.idVEHICULO, V.tipo, V.modelo, COUNT(*) AS cantidadPartes
-    FROM VEHICULOS V
-    JOIN VEHICULOS_POR_PARTES VP ON V.idVEHICULO = VP.idVEHICULO
-    JOIN PARTES P ON VP.idPARTE = P.idPARTE
-    WHERE V.idVEHICULO = idVEHICULO
-    GROUP BY V.idVEHICULO, V.tipo, V.modelo;
-    
-
-
+CREATE VIEW `PUNTO 8` AS
+	SELECT V.patente as patente, V.tipo, V.modelo, COUNT(*) AS cantidadPartes
+	FROM VEHICULOS V
+	JOIN VEHICULOS_POR_PARTES VP ON V.idVEHICULO = VP.idVEHICULO
+	JOIN PARTES P ON VP.idPARTE = P.idPARTE
+	GROUP BY V.idVEHICULO, V.tipo, V.modelo;
+SELECT *
+FROM `PUNTO 8`
+WHERE idVEHICULO = <id_vehiculo>;
 -- 9. Crear una copia de la tabla rubros, que además tenga una columna del tipo JSON para 
 -- guardar los movimientos. Llenar esta tabla con los mismos datos del TP1 y resolver la
 -- consulta: Dado un rubro listar todos los movimientos de ese rubro.
 
+CREATE PROCEDURE `PUNTO 9` (IN fecha_inicio DATE, IN fecha_fin DATE )
+BEGIN
+	DROP TABLE IF EXISTS `LBD2024G06AGROSA`.`TEMP_JSON` ;
+		CREATE TEMPORARY TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`TEMP_JSON` (
+			`idTEM_JSON` INT AUTO_INCREMENT PRIMARY KEY,
+			jsonData JSON
+	);
+
+INSERT INTO `LBD2024G06AGROSA`.`TEMP_JSON` (jsonData)
+SELECT JSON_OBJECT(
+    'tipoMovimiento', tipoMovimiento,
+    'fecha', fecha,
+    'monto', monto,
+    'detalle', detalle,
+    'estado', estado,
+    'idRUBRO', idRUBRO
+)
+FROM MOVIMIENTOS;
+
 DROP TABLE IF EXISTS `LBD2024G06AGROSA`.`RUBROS_JSON` ;
-CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`RUBROS_JSON` AS SELECT * FROM `LBD2024G06AGROSA`.`RUBROS` ;
-SELECT * FROM `LBD2024G06AGROSA`.`RUBROS_JSON`;
+CREATE TABLE IF NOT EXISTS `LBD2024G06AGROSA`.`RUBROS_JSON` LIKE `LBD2024G06AGROSA`.`RUBROS` ;
+
 ALTER TABLE `LBD2024G06AGROSA`.`RUBROS_JSON` 
 ADD COLUMN `movimientos` JSON;
-INSERT INTO `RUBROS_JSON` (`rubro`, `tipoRubro`, `estado`
-))
-VALUES ('Venta', 'Ingreso', 'A', JSON_MERGE_PRESERVE(),
-       ('Empleados', 'Egreso', 'A'),
-       ('Insumos', 'Egreso', 'A'),
-       ('Maquinaria', 'Egreso', 'A'),
-       ('Impuestos', 'Egreso', 'A'),
-       ('Servicios', 'Ingreso', 'A'),
-       ('Arriendo', 'Egreso', 'A');
 
-(1, 'I', '2024-01-01', 1000, 'Venta de Trigo', 'P', 1),
-       (2, 'E', '2024-01-01', -500, 'Pago de Sueldos', 'P', 2),
-       (3, 'E', '2024-01-01', -200, 'Compra de Semillas', 'P', 3),
-       (4, 'E', '2024-01-01', -300, 'Compra de Fertilizantes', 'P', 3),
-       (5, 'E', '2024-01-01', -400, 'Compra de Herbicidas', 'P', 3),
-       (6, 'E', '2024-01-01', -500, 'Compra de Maquinaria', 'P', 4),
-       (7, 'E', '2024-01-01', -600, 'Pago de Impuestos', 'P', 5),
-       (8, 'I', '2024-01-01', 700, 'Venta de Servicios', 'C', 6),
-       (9, 'E', '2024-01-01', -800, 'Pago de Arriendo', 'C', 7),
-       (10, 'I', '2024-01-01', 900, 'Venta de Trigo', 'C', 1),
+INSERT INTO `LBD2024G06AGROSA`.`RUBROS_JSON` ( `rubro`, `estado`, `movimientos`)
+	SELECT rubro, estado, jsonData
+	FROM RUBROS R
+	INNER JOIN TEMP_JSON T
+		ON R.idRUBRO = JSON_EXTRACT(jsonData, '$.idRUBRO');
+        
+SELECT RJ.rubro,RJ.movimientos ->>  '$.tipoMovimiento' AS tipoMovimiento,
+				RJ.movimientos ->>  '$.fecha' AS fecha,
+                RJ.movimientos ->>  '$.monto' AS monto,
+                RJ.movimientos ->>  '$.detalle' AS detalle,
+                RJ.movimientos ->>  '$.estado' AS estado
+FROM RUBROS_JSON RJ
+WHERE RJ.rubro = "venta";
+DROP TABLE IF EXIST `TEMP_JSON;
+`
 -- 10: Realizar una vista que considere importante para su modelo. También dejar escrito el enunciado de la misma.
+-- Enunciado: Dado un empleado, mostrar las veces que trabajó como encargado, empleado, y operario en el último año
 
+CREATE VIEW `PUNTO 10` AS
+DROP TABLE IF EXISTS `TEMP_TABLE`;
+CREATE TEMPORARY TABLE IF NOT EXISTS `TEMP_TABLE` (
+	`idEMPLEADO` INT PRIMARY KEY,
+    `count` INT);
+INSERT INTO `TEMP_TABLE`
+	SELECT E.idEMPLEADO, COUNT(P.idENCARGADO)
+	FROM  EMPLEADOS E
+	INNER JOIN PARTES P
+	ON E.idEMPLEADO=P.idENCARGADO
+	GROUP BY E.idEMPLEADO;
+
+SELECT E.idEMPLEADO, T.count AS Veces_Como_Encargado,
+	SUM(CASE WHEN L.rol = 'O' THEN 1 ELSE 0 END) AS Veces_Como_Operario,
+    SUM(CASE WHEN L.rol = 'E' THEN 1 ELSE 0 END) AS Veces_Como_Empleado
+FROM  EMPLEADOS E
+INNER JOIN TEMP_TABLE T
+ON E.idEMPLEADO=T.idEMPLEADO
+INNER JOIN LINEAS_PARTES L
+ON E.idEMPLEADO=L.idEMPLEADO
+-- WHERE E.idEMPLEADO=5
+GROUP BY E.idEMPLEADO;
+DROP TABLE IF EXISTS TEMP_TABLE
