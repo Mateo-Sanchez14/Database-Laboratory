@@ -1,8 +1,6 @@
 # Agregar todo lo que necesitamos arriba.
 
 # 1. Dado un propietario, listar todas sus fincas entre ciertas latitudes y longitudes dadas.
-
-
 # 2. Realizar un listado de cantidad de partes agrupadas por vehículos.
 # 3. Dado un año y mes, mostrar la diferencia entre el total de superficie de todos los partes
 # de los vehículoe en ese mes, con el mismo mes de otro año también dado.
@@ -10,12 +8,19 @@
 # deberá ser: més, finca, total de partes
 # 5. Hacer un ranking con los vehículos que más partes tengan (por cantidad) en un rango de
 # fechas.
+
 # 6. Hacer un ranking con los rubros que más recaudan (por importe) en un rango de fechas.
-# 7. Hacer un ranking con los productos más recaudan (por cantidad) en un rango de fechas.
+
+# 7. Hacer un ranking con los rubros más recaudan (por cantidad) en un rango de fechas.
+
 # 8. Crear una vista con la funcionalidad del apartado 2.
+
 # 9. Crear una copia de la tabla rubros, que además tenga una columna del tipo JSON para
 # guardar los movimientos. Llenar esta tabla con los mismos datos del TP1 y resolver la
 # consulta: Dado un rubro listar todos los movimientos de ese rubro.
+
+
+
 # 10: Realizar una vista que considere importante para su modelo. También dejar escrito el
 # enunciado de la misma.
 
