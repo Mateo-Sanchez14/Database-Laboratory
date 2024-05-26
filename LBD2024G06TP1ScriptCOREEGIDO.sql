@@ -307,7 +307,7 @@ VALUES (27123456789, 'Liliana', 'Gomez'),
        (20159357456, 'Víctor', 'Luna'),
        (20753951789, 'Roberto', 'Sanchez Aguirre'),
        (20951753123, 'Ezequiel', 'Peralta'),
-       (27891234567, 'Valeria', 'Gimenez');
+       (27891234567, 'Teniente', 'Terra');
 
 -- Populate the table FINCAS
 INSERT INTO `FINCAS` (`idFINCA`, `nombreFinca`, `latitud`, `longitud`, `cuilPROPIETARIO`)
@@ -330,7 +330,18 @@ VALUES (1, 'La Estancia', -34.23722, -51.281592, 27891234567),
        (17, 'La Tranquilidad', -34.623421, -16.613772, 27345678912),
        (18, 'La Armonía', -34.62131, -17.613772, 20123456789),
        (19, 'La Solidaridad', -24.603722, -18.613772, 27234567891),
-       (20, 'La Caridad', -33.123722, -19.613772, 27123456789);
+       (20, 'La Caridad', -33.123722, -12.613772, 27123456789),
+       (21, 'La Juliana', -34.23722, -51.381592, 27891234567),
+       (22, 'La Mariana', -34.6321722, -11.381592, 20951753123),
+       (23, 'Campo Alegre', -33.123456, -53.281592, 27891234567),
+       (24, 'Campo Feliz', -34.6321722, -18.301592, 27891234567),
+       (25, 'Campo Tranquilo', -33.123456, -51.231592, 27891234567),
+       (26, 'Campo de la Paz', -34.6321722, -12.381592, 27891234567),
+       (27, 'Campo de la Alegría', -33.123456, 21.581592, 27891234567),
+       (28, 'Campo de la Esperanza', -34.6321722, -8.381592, 27891234567),
+       (29, 'Campo de la Justicia', -33.123456, -51.271592, 27891234567),
+       (30, 'Campo de la Gloria', -34.6321722, -17.381592, 27891234567);
+
 
 -- Populate the table PARTES
 INSERT INTO `PARTES` (`idPARTE`, `fechaParte`, `estado`, `superficie`, `idENCARGADO`, `idFINCA`)
