@@ -3,7 +3,6 @@
   <component name="SqlDialectMappings">
     <file url="file://$PROJECT_DIR$/LBD2024G06TP1ScriptCOREEGIDO.sql" dialect="MySQL" />
     <file url="file://$PROJECT_DIR$/LBG2024G06TP2Script.sql" dialect="MySQL" />
-    <file url="file://$PROJECT_DIR$/SCRIPT_PARTE_2.sql" dialect="MySQL" />
     <file url="PROJECT" dialect="MySQL" />
   </component>
 </project>
