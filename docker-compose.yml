@@ -7,7 +7,7 @@ services:
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: examplepassword
-      MYSQL_DATABASE: LBD2024G()AGROSA
+      MYSQL_DATABASE: LBD2024G06AGROSA
       MYSQL_USER: exampleuser
       MYSQL_PASSWORD: examplepassword
     ports:
