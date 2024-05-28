@@ -226,7 +226,8 @@ VALUES ('Venta', 'Ingreso', 'A'),
        ('Maquinaria', 'Egreso', 'A'),
        ('Impuestos', 'Egreso', 'A'),
        ('Servicios', 'Ingreso', 'A'),
-       ('Arriendo', 'Egreso', 'A');
+       ('Arriendo', 'Egreso', 'A'),
+       ('Artes Plasticas', 'Ingreso', 'A'); -- Rubro sin movimientos (Nadie compro las canastas de hoja de caña de azucar)
 
 
 -- Populate the table MOVIMIENTOS
@@ -341,7 +342,6 @@ VALUES (1, 'La Estancia', -34.23722, -51.281592, 27891234567),
        (28, 'Campo de la Esperanza', -34.6321722, -8.381592, 27891234567),
        (29, 'Campo de la Justicia', -33.123456, -51.271592, 27891234567),
        (30, 'Campo de la Gloria', -34.6321722, -17.381592, 27891234567);
-
 
 -- Populate the table PARTES
 INSERT INTO `PARTES` (`idPARTE`, `fechaParte`, `estado`, `superficie`, `idENCARGADO`, `idFINCA`)
@@ -949,7 +949,8 @@ VALUES ('1', 'STR 909', 'Tractor', 'John Deere 5075E', 'Labranza'),
        ('2', 'AB 898 ZG', 'Camión', 'Isuzu NPR', 'Transporte de carga'),
        ('3', 'RGB 041', 'Pickup', 'Ford F-150', 'Transporte ligero'),
        ('4', 'LG 420 BT', 'Cosechadora', 'Case IH Axial-Flow 7150', 'Cosecha de granos'),
-       ('5', 'ARG 255', 'Remolque', 'Brent 678', 'Transporte de productos agrícolas');
+       ('5', 'ARG 255', 'Remolque', 'Brent 678', 'Transporte de productos agrícolas'),
+       (6, 'SQL 123', 'Fumigadora', 'PLA 12', 'Fumigación'); -- Vehiculo sin partes
 
 -- Disable
 

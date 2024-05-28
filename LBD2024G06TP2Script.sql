@@ -21,13 +21,15 @@ END$$
 
 
 # 2. Realizar un listado de cantidad de partes agrupadas por vehículos.
+# Se usa un left join para que se muestren todos los vehículos, aunque no tengan partes.
+# Usamos left por legibilidad, pero recordamos que A LEFT JOIN B es lo mismo que B RIGHT JOIN A.
 DELIMITER $$
 CREATE PROCEDURE `SP_PARTES_POR_VEHICULO` ()
 BEGIN
-    SELECT V.tipo, V.modelo, COUNT(*) AS cantidadPartes
+    SELECT V.tipo, V.modelo, COUNT(P.idPARTE) AS cantidadPartes
     FROM VEHICULOS V
-    JOIN VEHICULOS_POR_PARTES VP ON V.idVEHICULO = VP.idVEHICULO AND V.patente = VP.patente
-    JOIN PARTES P ON VP.idPARTE = P.idPARTE
+    LEFT JOIN VEHICULOS_POR_PARTES VP ON V.idVEHICULO = VP.idVEHICULO AND V.patente = VP.patente
+    LEFT JOIN PARTES P ON VP.idPARTE = P.idPARTE
     GROUP BY V.idVEHICULO, V.tipo, V.modelo;
 END $$
 
@@ -43,6 +45,8 @@ END $$
 
 # 4. Dado un rango de fechas, mostrar mes a mes la cantidad de partes por finca. El formato
 # deberá ser: més, finca, total de partes
+
+-- Consideramos que como no esta aclarado, no debemos mostras las fincas que no tengan partes ese mes, por lo que con un INNER JOIN es suficiente
 DELIMITER $$
 CREATE PROCEDURE `SP_PARTES_POR_FINCA` ( IN fechaInicio DATE, IN fechaFin DATE )
 BEGIN
@@ -56,6 +60,7 @@ END $$
 
 # 5. Hacer un ranking con los vehículos que más partes tengan (por cantidad) en un rango de
 # fechas.
+-- Consideramos que los rankings no tienen limites, por lo que no se pide un top 10 o algo similar
 DELIMITER $$
 CREATE PROCEDURE `SP_RANKING_VEHICULOS` ( IN fechaInicio DATE, IN fechaFin DATE )
 BEGIN
@@ -70,40 +75,58 @@ BEGIN
 END $$
 
 -- 6. Hacer un ranking con los rubros que más recaudan (por importe) en un rango de fechas.
-
-DELIMITER $$
-CREATE PROCEDURE `PUNTO 6` (IN fecha_inicio DATE, IN fecha_fin DATE )
+-- Consideramos que los rankings no tienen limites, por lo que no se pide un top 10 o algo similar
+-- Hacemos un LEFT JOIN para que se muestren todos los rubros, aunque no tengan movimientos.
+-- Consideramos que si un rubro tiene ingreso y egresos, la recaudacion es la suma de los ingresos menos los egresos
+CREATE PROCEDURE `PUNTO 6` (IN fecha_inicio DATE, IN fecha_fin DATE)
 BEGIN
-	SELECT R.rubro, SUM(M.monto) AS total_recaudado
-	FROM RUBROS R
-	INNER JOIN MOVIMIENTOS M
-		ON R.idRUBRO = M.idRUBRO
-	WHERE fecha BETWEEN fecha_inicio AND fecha_fin
-	GROUP BY rubro
-	ORDER BY total_recaudado DESC;
+    SELECT
+        R.rubro,
+        COALESCE(SUM(CASE
+                        WHEN M.fecha BETWEEN fecha_inicio AND fecha_fin THEN M.monto
+                        ELSE 0
+                     END), 0) AS total_recaudado
+    FROM
+        RUBROS R
+    LEFT JOIN
+        MOVIMIENTOS M ON R.idRUBRO = M.idRUBRO
+    WHERE R.tipoRubro = 'Ingreso'
+    GROUP BY
+        R.rubro
+    ORDER BY
+        total_recaudado DESC;
 END$$
 
 -- 7. Hacer un ranking con los rubros más recaudan (por cantidad) en un rango de fechas.
-
+-- Consideramos que los rankings no tienen limites, por lo que no se pide un top 10 o algo similar
 DELIMITER $$
-CREATE PROCEDURE `PUNTO 7` (IN fecha_inicio DATE, IN fecha_fin DATE )
+CREATE PROCEDURE `PUNTO 7` (IN fecha_inicio DATE, IN fecha_fin DATE)
 BEGIN
-	SELECT R.rubro, COUNT(M.idMOVIMIENTO) AS cantidad_de_Movimientos
-    FROM RUBROS R
-    INNER JOIN MOVIMIENTOS M
-		ON R.idRUBRO = M.idRUBRO
-    WHERE fecha BETWEEN fecha_inicio AND fecha_fin
-    GROUP BY R.rubro
-    ORDER BY cantidad_de_Movimientos DESC; 
+    SELECT
+        R.rubro,
+        COALESCE(COUNT(CASE
+                          WHEN M.tipoMovimiento = 'I' AND M.fecha BETWEEN fecha_inicio AND fecha_fin
+                          THEN M.idMOVIMIENTO
+                          ELSE NULL
+                       END), 0) AS cantidad_de_Movimientos
+    FROM
+        RUBROS R
+    LEFT JOIN
+        MOVIMIENTOS M ON R.idRUBRO = M.idRUBRO
+    GROUP BY
+        R.rubro
+    ORDER BY
+        cantidad_de_Movimientos DESC;
 END$$
+DELIMITER ;
 
 -- 8. Crear una vista con la funcionalidad del apartado 2.
 
 CREATE VIEW `PUNTO 8` AS
-	SELECT V.tipo, V.modelo, COUNT(*) AS cantidadPartes
+	SELECT V.tipo, V.modelo, COUNT(P.idPARTE) AS cantidadPartes
     FROM VEHICULOS V
-    JOIN VEHICULOS_POR_PARTES VP ON V.idVEHICULO = VP.idVEHICULO AND V.patente = VP.patente
-    JOIN PARTES P ON VP.idPARTE = P.idPARTE
+    LEFT JOIN VEHICULOS_POR_PARTES VP ON V.idVEHICULO = VP.idVEHICULO AND V.patente = VP.patente
+    LEFT JOIN PARTES P ON VP.idPARTE = P.idPARTE
     GROUP BY V.idVEHICULO, V.tipo, V.modelo;
 
 -- 9. Crear una copia de la tabla rubros, que además tenga una columna del tipo JSON para 
@@ -157,7 +180,7 @@ BEGIN
     WHERE RJ.rubro = rubro;
 END$$
 
-
+DELIMITER ;
 -- 10: Realizar una vista que considere importante para su modelo. También dejar escrito el enunciado de la misma.
 -- Enunciado: Dado un empleado, mostrar las veces que trabajó como empleado, y operario en el último año
 
@@ -169,6 +192,8 @@ CREATE VIEW `PUNTO 10` AS
 		INNER JOIN LINEAS_PARTES L
 			ON E.idEMPLEADO=L.idEMPLEADO
 		GROUP BY E.idEMPLEADO;
+
+
 
 # LLAMADAS A LOS PROCEDIMIENTOS ALMACENADOS
 CALL SP_LISTAR_FINCAS(27891234567, -35, -32, -60, -18);
