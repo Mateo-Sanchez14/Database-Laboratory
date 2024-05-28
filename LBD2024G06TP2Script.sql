@@ -185,14 +185,14 @@ DELIMITER ;
 -- Enunciado: Dado un empleado, mostrar las veces que trabajó como empleado, y operario en el último año
 
 CREATE VIEW `PUNTO 10` AS
-	SELECT E.idEMPLEADO,
+	SELECT E.apellidos,E.nombres,
 		SUM(CASE WHEN L.rol = 'O' THEN 1 ELSE 0 END) AS Veces_Como_Operario,
 		SUM(CASE WHEN L.rol = 'E' THEN 1 ELSE 0 END) AS Veces_Como_Empleado
 		FROM  EMPLEADOS E
 		INNER JOIN LINEAS_PARTES L
 			ON E.idEMPLEADO=L.idEMPLEADO
-		GROUP BY E.idEMPLEADO;
-
+		GROUP BY E.idEMPLEADO, E.apellidos, E.nombres
+        ORDER BY E.apellidos, E.nombres;
 
 
 # LLAMADAS A LOS PROCEDIMIENTOS ALMACENADOS
