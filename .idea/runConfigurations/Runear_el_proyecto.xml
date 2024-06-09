@@ -1,0 +1,9 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Runear el proyecto" type="DatabaseScript" editBeforeRun="true">
+    <script-file value="$PROJECT_DIR$/LBD2024G06TP1ScriptCOREEGIDO.sql" />
+    <script-file value="$PROJECT_DIR$/LBD2024G06TP2Script.sql" />
+    <script-mode>FILE</script-mode>
+    <data-source id="c3eaa4c1-cd65-45b6-916e-3f866e28f9dd" />
+    <method v="2" />
+  </configuration>
+</component>
