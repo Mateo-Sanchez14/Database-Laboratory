@@ -44,9 +44,15 @@ CREATE TRIGGER `borrado_parte`
     ON `PARTES`
     FOR EACH ROW
 BEGIN
+    DECLARE username 	VARCHAR(30);
+    DECLARE hostname 	VARCHAR(30);
+
+    SET username = SUBSTRING_INDEX(USER(), '@', 1);
+    SET hostname = SUBSTRING_INDEX(USER(), '@', -1);
+
     INSERT INTO `AUDITORIAS_PARTES` (`usuario`, `host`, `fecha`, `tipoOperacion`, `idPARTE`, `idENCARGADO`, `idFINCA`,
                                      `fechaParte`, `estado`, `superficie`)
-    VALUES (USER(), HOST(), NOW(), 'Borrado', OLD.`idPARTE`, OLD.`idENCARGADO`, OLD.`idFINCA`, OLD.`fechaParte`,
+    VALUES (username, hostname, NOW(), 'Borrado', OLD.`idPARTE`, OLD.`idENCARGADO`, OLD.`idFINCA`, OLD.`fechaParte`,
             OLD.`estado`, OLD.`superficie`);
 END //
 
@@ -57,24 +63,49 @@ CREATE TRIGGER `borrado_linea_parte`
     ON `LINEAS_PARTES`
     FOR EACH ROW
 BEGIN
+    DECLARE username 	VARCHAR(30);
+    DECLARE hostname 	VARCHAR(30);
+
+    SET username = SUBSTRING_INDEX(USER(), '@', 1);
+    SET hostname = SUBSTRING_INDEX(USER(), '@', -1);
+
     INSERT INTO `AUDITORIAS_LINEAS_PARTES` (`usuario`, `host`, `fecha`, `tipoOperacion`, `idPARTE`, `idEMPLEADO`, `rol`)
-    VALUES (USER(), HOST(), NOW(), 'Borrado', OLD.`idPARTE`, OLD.`idEMPLEADO`, OLD.`rol`);
+    VALUES (username, hostname, NOW(), 'Borrado', OLD.`idPARTE`, OLD.`idEMPLEADO`, OLD.`rol`);
 END //
 
 DROP PROCEDURE IF EXISTS `borrar_parte` //
 
 CREATE PROCEDURE `borrar_parte`(IN `id` INT, OUT `resultado` VARCHAR(255))
-BEGIN
+SALIR: BEGIN
     DECLARE EXIT HANDLER FOR SQLEXCEPTION
     BEGIN
         SET resultado = 'Error al intentar borrar la parte.';
     END;
 
-    DELETE FROM `LINEAS_PARTES` WHERE `idPARTE` = id;
+    SELECT * FROM `LINEAS_PARTES` WHERE `idPARTE` = id;
+    IF ROW_COUNT() = 0 THEN
+        SET resultado = 'No se puede borrar un parte con lineasPartes asociadas.';
+        LEAVE SALIR;
+    END IF;
 
     DELETE FROM `PARTES` WHERE `idPARTE` = id;
     IF ROW_COUNT() = 0 THEN
         SET resultado = 'El idPARTE no existe en PARTES.';
+    ELSE
+        SET resultado = 'Operación exitosa.';
+    END IF;
+END //
+
+CREATE PROCEDURE `borrar_linea_parte`(IN `id` INT, OUT `resultado` VARCHAR(255))
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET resultado = 'Error al intentar borrar la linea de parte.';
+    END;
+
+    DELETE FROM `LINEAS_PARTES` WHERE `idPARTE` = id;
+    IF ROW_COUNT() = 0 THEN
+        SET resultado = 'El idPARTE no existe en LINEAS_PARTES.';
     ELSE
         SET resultado = 'Operación exitosa.';
     END IF;
