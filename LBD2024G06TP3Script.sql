@@ -674,3 +674,9 @@ SELECT @resultado;
 
 CALL sumar_superficies_por_finca('2024-06-10', '2024-07-15', @resultado);
 SELECT @resultado;
+
+
+-- Ver tablas de auditorias
+
+SELECT * FROM AUDITORIAS_PARTES;
+SELECT * FROM AUDITORIAS_LINEAS_PARTES;
