@@ -1,4 +1,4 @@
-USE `lbd2024g06agrosa`;
+USE `LBD2024G06AGROSA`;
 
 DROP TABLE IF EXISTS `AUDITORIAS_PARTES`;
 DROP TABLE IF EXISTS `AUDITORIAS_LINEAS_PARTES`;
@@ -159,6 +159,45 @@ BEGIN
         NEW.rol
     );
 END $$
+
+DELIMITER //
+
+DROP TRIGGER IF EXISTS `borrado_parte` //
+
+CREATE TRIGGER `borrado_parte`
+    AFTER DELETE
+    ON `PARTES`
+    FOR EACH ROW
+BEGIN
+    DECLARE username 	VARCHAR(30);
+    DECLARE hostname 	VARCHAR(30);
+
+    SET username = SUBSTRING_INDEX(USER(), '@', 1);
+    SET hostname = SUBSTRING_INDEX(USER(), '@', -1);
+
+    INSERT INTO `AUDITORIAS_PARTES` (`usuario`, `host`, `fecha`, `tipoOperacion`, `idPARTE`, `idENCARGADO`, `idFINCA`,
+                                     `fechaParte`, `estado`, `superficie`)
+    VALUES (username, hostname, NOW(), 'Borrado', OLD.`idPARTE`, OLD.`idENCARGADO`, OLD.`idFINCA`, OLD.`fechaParte`,
+            OLD.`estado`, OLD.`superficie`);
+END //
+
+DROP TRIGGER IF EXISTS `borrado_linea_parte` //
+
+CREATE TRIGGER `borrado_linea_parte`
+    AFTER DELETE
+    ON `LINEAS_PARTES`
+    FOR EACH ROW
+BEGIN
+    DECLARE username 	VARCHAR(30);
+    DECLARE hostname 	VARCHAR(30);
+
+    SET username = SUBSTRING_INDEX(USER(), '@', 1);
+    SET hostname = SUBSTRING_INDEX(USER(), '@', -1);
+
+    INSERT INTO `AUDITORIAS_LINEAS_PARTES` (`usuario`, `host`, `fecha`, `tipoOperacion`, `idPARTE`, `idEMPLEADO`, `rol`)
+    VALUES (username, hostname, NOW(), 'Borrado', OLD.`idPARTE`, OLD.`idEMPLEADO`, OLD.`rol`);
+END //
+
 DELIMITER ;
 
 -- SECCION PARA LOS STORE PROCEDURES
@@ -288,7 +327,7 @@ SALIR: BEGIN
 				SET mensaje = 'Error al modificar el parte, fecha posterior a la actual';
 			LEAVE SALIR;
             
-            ELSEIF (IN_idPARTE IS NULL) OR (IN_idFINCA IS NULL) OR (IN_fechaParte IS NULL) OR (IN_superficie IS NULL) OR (idENCARGADO IS NULL)
+            ELSEIF (IN_idPARTE IS NULL) OR (IN_idFINCA IS NULL) OR (IN_fechaParte IS NULL) OR (IN_superficie IS NULL) OR (IN_idENCARGADO IS NULL)
 			THEN
 				SET mensaje = 'Error al modificar el parte, datos incompletos';
 			LEAVE SALIR; 
@@ -305,7 +344,7 @@ SALIR: BEGIN
 					idFINCA = IN_idFINCA,
 					fechaParte = IN_fechaParte,
 					superficie = IN_superficie,
-					idENCARGADO = idENCARGADO,
+					idENCARGADO = IN_idENCARGADO,
 					estado = IN_estado
 				WHERE idPARTE = IN_idPARTE;
 				SET mensaje = 'Parte modificado exitosamente';
@@ -355,7 +394,6 @@ SALIR: BEGIN
 END $$
 DELIMITER ;
 
- 
  -- LLAMADAS AL STORE PROCEDURE `modificarLineasPartes`
  
  -- Error: Datos incompletos (IN_idEMPLEADO es NULL)
@@ -370,6 +408,78 @@ SELECT @mensaje;
 CALL modificarLineasPartes(103, 3, 'O', @mensaje);
 SELECT @mensaje;
 SELECT * FROM AUDITORIAS_LINEAS_PARTES;
+
+# 6. Borrado de un Parte y sus Líneas (no en cascada).
+
+DELIMITER //
+
+DROP PROCEDURE IF EXISTS `borrar_parte` //
+
+CREATE PROCEDURE `borrar_parte`(IN `id` INT, OUT `resultado` VARCHAR(255))
+SALIR: BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET resultado = 'Error al intentar borrar la parte, tiene lineas parte asociadas.';
+    END;
+
+    DELETE FROM `PARTES` WHERE `idPARTE` = id;
+    IF ROW_COUNT() = 0 THEN
+        SET resultado = 'El idPARTE no existe en PARTES.';
+    ELSE
+        SET resultado = 'Operación exitosa.';
+    END IF;
+END //
+
+DROP PROCEDURE IF EXISTS `borrar_linea_parte` //
+
+CREATE PROCEDURE `borrar_linea_parte`(IN `IN_idParte` INT, IN `IN_idEmpleado` INT ,OUT `resultado` VARCHAR(255))
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET resultado = 'Error al intentar borrar la linea de parte.';
+    END;
+
+    DELETE FROM `LINEAS_PARTES` WHERE `idPARTE` = IN_idParte AND `idEMPLEADO` = IN_idEmpleado;
+    IF ROW_COUNT() = 0 THEN
+        SET resultado = 'La linea parte no existe.';
+    ELSE
+        SET resultado = 'Operación exitosa.';
+    END IF;
+END //
+
+DELIMITER ;
+
+-- LLAMADAS AL STORE PROCEDURE `borrar_parte`
+
+SELECT * FROM PARTES LEFT JOIN LINEAS_PARTES ON PARTES.idPARTE = LINEAS_PARTES.idPARTE  ;
+
+-- Error: No se puede borrar un parte con lineasPartes asociadas
+CALL borrar_parte(1, @resultado);
+SELECT @resultado;
+
+-- Borrado correcto (El parte 101 no tiene lineas de parte asociadas
+CALL borrar_parte(101, @resultado);
+SELECT @resultado;
+
+
+-- LLAMADAS AL STORE PROCEDURE `borrar_linea_parte`
+
+-- Error: El idPARTE no existe en LINEAS_PARTES
+CALL borrar_linea_parte(105, 106, @resultado);
+SELECT @resultado;
+
+-- Borrado correcto (Vamos a borrar todas las lineas partes del parte 1)
+CALL borrar_linea_parte(1, 5, @resultado);
+SELECT @resultado;
+CALL borrar_linea_parte(1, 8, @resultado);
+CALL borrar_linea_parte(1, 15, @resultado);
+CALL borrar_linea_parte(1, 24, @resultado);
+CALL borrar_linea_parte(1, 25, @resultado);
+SELECT @resultado;
+
+-- Borrado correcto Ahora vamos a borrar el parte 1
+CALL borrar_parte(1, @resultado);
+SELECT @resultado;
 
 
 -- Punto 7: Búsqueda de un Parte.
@@ -419,3 +529,148 @@ SELECT @mensaje;
 -- Consulta exitosa
 CALL buscarParte (11, 8, '2024-05-15', @mensaje);
 -- SELECT @mensaje;
+
+# 8. Listado de Partes, ordenado por fecha de Parte
+
+DELIMITER //
+
+DROP PROCEDURE IF EXISTS `listar_partes` //
+
+CREATE PROCEDURE `listar_partes`(OUT `resultado` VARCHAR(255))
+BEGIN
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET resultado = 'Error al listar las partes.';
+    END;
+
+    SELECT `idPARTE`, `idENCARGADO`, `idFINCA`, `fechaParte`, `estado`, `superficie`
+    FROM `PARTES`
+    ORDER BY `fechaParte` ASC;
+
+    SET resultado = 'Operación exitosa.';
+END //
+
+DELIMITER ;
+
+-- LLAMADAS AL STORE PROCEDURE `listar_partes`
+
+CALL listar_partes(@resultado);
+
+# 9 Dado un rango de fechas, mostrar los Partes y sus líneas por Finca.
+
+DELIMITER //
+
+DROP PROCEDURE IF EXISTS `listar_partes_por_fecha` //
+
+CREATE PROCEDURE `listar_partes_por_fecha`(IN `fechaInicio` DATE, IN `fechaFin` DATE, OUT `resultado` VARCHAR(255))
+SALIR: BEGIN
+     -- Contar el número de filas devueltas
+    DECLARE row_count INT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET resultado = 'Error al listar las partes por fecha.';
+    END;
+
+    IF fechaInicio > fechaFin THEN
+        SET resultado = 'La fecha de inicio es mayor que la fecha de fin.';
+        LEAVE SALIR;
+    END IF;
+
+    SELECT `P`.`idPARTE`, `P`.`idENCARGADO`, `P`.`idFINCA`, `P`.`fechaParte`, `P`.`estado`, `P`.`superficie`,
+           `LP`.`idEMPLEADO`, `LP`.`rol`
+    FROM `PARTES` `P`
+             JOIN `LINEAS_PARTES` `LP` ON `P`.`idPARTE` = `LP`.`idPARTE`
+    WHERE `P`.`fechaParte` BETWEEN fechaInicio AND fechaFin
+    ORDER BY `P`.`idFINCA`, `P`.`fechaParte`;
+
+    # Hago esto porque la funcion ROW_COUNT() me devuelve -1
+    SELECT COUNT(*) INTO row_count
+    FROM `PARTES` `P`
+             JOIN `LINEAS_PARTES` `LP` ON `P`.`idPARTE` = `LP`.`idPARTE`
+    WHERE `P`.`fechaParte` BETWEEN fechaInicio AND fechaFin;
+
+    -- Verificar el resultado de la consulta
+    IF row_count = 0 THEN
+        SET resultado = 'No se encontraron registros en el rango de fechas especificado.';
+    ELSE
+        SET resultado = 'operacion exitosa.';
+    END IF;
+END //
+
+DELIMITER ;
+
+-- LLAMADAS AL STORE PROCEDURE `listar_partes_por_fecha`
+
+-- Error: La fecha de inicio es mayor que la fecha de fin
+
+CALL listar_partes_por_fecha('2024-06-10', '2024-06-09', @resultado);
+SELECT @resultado;
+
+-- Caso: No se encontraron registros en el rango de fechas especificado
+
+CALL listar_partes_por_fecha('2022-06-10', '2022-06-10', @resultado);
+SELECT @resultado;
+
+-- Caso: Operación exitosa
+
+CALL listar_partes_por_fecha('2024-06-10', '2024-07-15', @resultado);
+SELECT @resultado;
+
+
+# 10. Suma de superficies de Partes por Finca en un rango de fechas.
+
+DELIMITER //
+
+DROP PROCEDURE IF EXISTS `sumar_superficies_por_finca` //
+
+CREATE PROCEDURE `sumar_superficies_por_finca`(IN `fechaInicio` DATE, IN `fechaFin` DATE, OUT `resultado` VARCHAR(255))
+SALIR: BEGIN
+    DECLARE row_count INT;
+
+    DECLARE EXIT HANDLER FOR SQLEXCEPTION
+    BEGIN
+        SET resultado = 'Error al sumar superficies por finca.';
+    END;
+
+    IF fechaInicio > fechaFin THEN
+        SET resultado = 'La fecha de inicio es mayor que la fecha de fin.';
+        LEAVE SALIR;
+    END IF;
+
+    SELECT `P`.`idFINCA`, `F`.`nombreFinca` AS `nombre_finca`, SUM(`P`.`superficie`) AS `superficieTotal`
+    FROM `PARTES` `P`
+             JOIN `FINCAS` `F` ON `P`.`idFINCA` = `F`.`idFINCA`
+    WHERE `P`.`fechaParte` BETWEEN fechaInicio AND fechaFin
+    GROUP BY `P`.`idFINCA`;
+
+    SELECT COUNT(*) INTO row_count
+    FROM `PARTES` `P`
+             JOIN `FINCAS` `F` ON `P`.`idFINCA` = `F`.`idFINCA`
+    WHERE `P`.`fechaParte` BETWEEN fechaInicio AND fechaFin;
+
+    IF row_count = 0 THEN
+        SET resultado = 'No se encontraron registros en el rango de fechas especificado.';
+    ELSE
+        SET resultado = 'Operación exitosa.';
+    END IF;
+END //
+
+DELIMITER ;
+
+-- LLAMADAS AL STORE PROCEDURE `sumar_superficies_por_finca`
+
+-- Error: La fecha de inicio es mayor que la fecha de fin
+
+CALL sumar_superficies_por_finca('2024-06-10', '2024-06-09', @resultado);
+SELECT @resultado;
+
+-- Caso: No se encontraron registros en el rango de fechas especificado
+
+CALL sumar_superficies_por_finca('2022-06-10', '2022-06-10', @resultado);
+SELECT @resultado;
+
+-- Caso: Operación exitosa
+
+CALL sumar_superficies_por_finca('2024-06-10', '2024-07-15', @resultado);
+SELECT @resultado;
